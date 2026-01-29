@@ -7,6 +7,9 @@ EXPORTS
 	AmxLoad
 	AmxUnload
 	ProcessTick
+	ComponentEntryPoint
+	GetComponent
+	CreateComponent
 	OnPlayerConnect
 	OnPlayerDisconnect
 	OnPlayerSpawn
