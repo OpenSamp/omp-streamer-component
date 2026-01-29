@@ -16,31 +16,22 @@
 
 #include "main.h"
 
-#include "core.h"
+#include "component_bridge.h"
 #include "natives.h"
-#include "utility.h"
-
-extern void *pAMXFunctions;
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports()
 {
-	return sampgdk::Supports() | SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES | SUPPORTS_PROCESS_TICK;
+	return StreamerSupports();
 }
 
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData)
 {
-	core.reset(new Core);
-	pAMXFunctions = ppData[PLUGIN_DATA_AMX_EXPORTS];
-	bool load = sampgdk::Load(ppData);
-	sampgdk::logprintf("\n\n*** Streamer Plugin v%s by Incognito loaded ***\n", PLUGIN_VERSION);
-	return load;
+	return StreamerLoad(ppData);
 }
 
 PLUGIN_EXPORT void PLUGIN_CALL Unload()
 {
-	core.reset();
-	sampgdk::logprintf("\n\n*** Streamer Plugin v%s by Incognito unloaded ***\n", PLUGIN_VERSION);
-	sampgdk::Unload();
+	StreamerUnload();
 }
 
 AMX_NATIVE_INFO natives[] =
@@ -273,23 +264,15 @@ AMX_NATIVE_INFO natives[] =
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx)
 {
-	core->getData()->interfaces.insert(amx);
-	core->getData()->amxUnloadDestroyItems.insert(amx);
-	return Utility::checkInterfaceAndRegisterNatives(amx, natives);
+	return StreamerAmxLoad(amx);
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx)
 {
-	core->getData()->interfaces.erase(amx);
-	if (core->getData()->amxUnloadDestroyItems.find(amx) != core->getData()->amxUnloadDestroyItems.end())
-	{
-		Utility::destroyAllItemsInInterface(amx);
-		core->getData()->amxUnloadDestroyItems.erase(amx);
-	}
-	return AMX_ERR_NONE;
+	return StreamerAmxUnload(amx);
 }
 
 PLUGIN_EXPORT void PLUGIN_CALL ProcessTick()
 {
-	core->getStreamer()->startAutomaticUpdate();
+	StreamerProcessTick();
 }

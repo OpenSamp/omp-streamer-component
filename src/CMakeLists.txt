@@ -11,12 +11,14 @@ list(APPEND PLUGIN_SOURCES
 	callbacks.cpp
 	cell.cpp
 	chunk-streamer.cpp
+	component_bridge.cpp
 	core.cpp
 	data.cpp
 	grid.cpp
 	identifier.cpp
 	item.cpp
 	main.cpp
+	openmp_component.cpp
 	player.cpp
 	sampgdk.c
 	streamer.cpp
