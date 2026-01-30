@@ -8,6 +8,10 @@ if (MSVC)
     add_definitions("/MP")
 endif()
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-error=nonnull>)
+endif()
+
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/lib/cmake-modules")
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/lib/eigen/cmake")
