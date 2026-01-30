@@ -8,9 +8,6 @@ if (MSVC)
     add_definitions("/MP")
 endif()
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-error=nonnull>)
-endif()
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/lib/cmake-modules")
@@ -21,7 +18,7 @@ find_package(SAMPSDK REQUIRED)
 include_directories(${SAMPSDK_DIR})
 include_directories(${SAMPSDK_DIR}/amx)
 
-include_directories(${PROJECT_SOURCE_DIR}/lib/boost)
+include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/lib/boost)
 
 if(EIGEN3_INCLUDE_DIR)
 	file(TO_CMAKE_PATH ${EIGEN3_INCLUDE_DIR} EIGEN3_INCLUDE_DIR)
