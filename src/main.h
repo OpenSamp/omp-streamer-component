@@ -20,6 +20,11 @@
 #define INCLUDE_FILE_VERSION (0x296)
 #define PLUGIN_VERSION "2.9.6"
 
+// open.mp SDK constants (INVALID_PLAYER_ID, INVALID_VEHICLE_ID, INVALID_OBJECT_ID,
+// INVALID_ACTOR_ID, PLAYER_POOL_SIZE, ...). Pulled in first so every source in the project
+// sees the real constexpr from values.hpp rather than legacy shadow macros.
+#include <values.hpp>
+
 #include <boost/bimap.hpp>
 #include <boost/bimap/multiset_of.hpp>
 #include <boost/bimap/unordered_set_of.hpp>

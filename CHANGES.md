@@ -1,5 +1,25 @@
-SA-MP Streamer Plugin
-=====================
+Streamer (open.mp component)
+============================
+
+v2.9.6-omp
+----------
+
+- **Fully ported to open.mp component model.** Entry point is now `ComponentEntryPoint`
+  returning a real `IComponent`; SA-MP plugin exports (`Load`/`Unload`/`AmxLoad`/`ProcessTick`)
+  and the earlier non-functional bridge are gone.
+- All subsystem calls route through open.mp components (`IPlayer`, `IObjectsComponent` +
+  `IPlayerObjectData`, `IPickupsComponent`, `IActorsComponent`, `ICheckpointsComponent` +
+  `IPlayerCheckpointData`, `IPlayerTextLabelData`, `IVehiclesComponent`, `IClassesComponent`).
+  Events (connect/disconnect/spawn/pickup/actor stream/checkpoint/object edit+select/shot/
+  class request/interior change) come from the respective dispatchers.
+- `lib/samp-plugin-sdk` submodule dropped. Only the Pawn VM headers and the amx dispatcher
+  (`amxplugin.cpp`) survive, moved to `lib/pawn/` with a self-contained `amx_exports.h`.
+- Default `Streamer_GetVisibleItems(STREAMER_TYPE_OBJECT)` raised from 500 → 1000 so the
+  effective stream radius for object-heavy maps matches the 0.3.7 player object pool.
+- Actors now get a periodic (~3s) position re-sync to keep peds above floor after the
+  client has had time to load map collision.
+- 3D text label and map icon colours: fixed RGBA vs ARGB (SA-MP Pawn passes these as
+  0xRRGGBBAA; we were mis-decoding as ARGB).
 
 v2.9.6
 ------

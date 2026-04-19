@@ -26,62 +26,37 @@
 #include <cstddef>
 #include <amx/amx.h>
 
-// SA-MP keeps AMX_NATIVE as `cell (*)(AMX*, cell*)` via amx.h; nothing extra needed here.
+// SA-MP-named aliases for values the streamer's SA-MP-era code references. IDs that also exist
+// in open.mp's values.hpp (INVALID_PLAYER_ID/VEHICLE_ID/OBJECT_ID/ACTOR_ID) are pulled straight
+// from there via main.h — we no longer shadow them with #defines, which used to clash on any
+// translation unit that also included <sdk.hpp>.
 
-// SA-MP gameplay constants still referenced by the streamer sources.
-#ifndef MAX_PLAYERS
-#define MAX_PLAYERS (1000)
-#endif
+constexpr int MAX_PLAYERS = 1000;
 
-#ifndef EDIT_RESPONSE_CANCEL
-#define EDIT_RESPONSE_CANCEL (0)
-#define EDIT_RESPONSE_FINAL  (1)
-#define EDIT_RESPONSE_UPDATE (2)
-#endif
+constexpr int EDIT_RESPONSE_CANCEL = 0;
+constexpr int EDIT_RESPONSE_FINAL  = 1;
+constexpr int EDIT_RESPONSE_UPDATE = 2;
 
-#ifndef SELECT_OBJECT_GLOBAL_OBJECT
-#define SELECT_OBJECT_GLOBAL_OBJECT (1)
-#define SELECT_OBJECT_PLAYER_OBJECT (2)
-#endif
+constexpr int SELECT_OBJECT_GLOBAL_OBJECT = 1;
+constexpr int SELECT_OBJECT_PLAYER_OBJECT = 2;
 
-#ifndef BULLET_HIT_TYPE_NONE
-#define BULLET_HIT_TYPE_NONE          (0)
-#define BULLET_HIT_TYPE_PLAYER        (1)
-#define BULLET_HIT_TYPE_VEHICLE       (2)
-#define BULLET_HIT_TYPE_OBJECT        (3)
-#define BULLET_HIT_TYPE_PLAYER_OBJECT (4)
-#endif
+constexpr int BULLET_HIT_TYPE_NONE          = 0;
+constexpr int BULLET_HIT_TYPE_PLAYER        = 1;
+constexpr int BULLET_HIT_TYPE_VEHICLE       = 2;
+constexpr int BULLET_HIT_TYPE_OBJECT        = 3;
+constexpr int BULLET_HIT_TYPE_PLAYER_OBJECT = 4;
 
-#ifndef INVALID_PLAYER_ID
-#define INVALID_PLAYER_ID (0xFFFF)
-#endif
+// open.mp's values.hpp exposes INVALID_TEXT_LABEL_ID; the streamer code uses the SA-MP name.
+constexpr int INVALID_3DTEXT_ID = 0xFFFF;
 
-#ifndef INVALID_VEHICLE_ID
-#define INVALID_VEHICLE_ID (0xFFFF)
-#endif
-
-#ifndef INVALID_OBJECT_ID
-#define INVALID_OBJECT_ID (0xFFFF)
-#endif
-
-#ifndef INVALID_ACTOR_ID
-#define INVALID_ACTOR_ID (0xFFFF)
-#endif
-
-#ifndef INVALID_3DTEXT_ID
-#define INVALID_3DTEXT_ID (0xFFFF)
-#endif
-
-// Matches both SA-MP values and open.mp's PlayerState enum (player.hpp).
-#ifndef PLAYER_STATE_NONE
-#define PLAYER_STATE_NONE       (0)
-#define PLAYER_STATE_ONFOOT     (1)
-#define PLAYER_STATE_DRIVER     (2)
-#define PLAYER_STATE_PASSENGER  (3)
-#define PLAYER_STATE_WASTED     (7)
-#define PLAYER_STATE_SPAWNED    (8)
-#define PLAYER_STATE_SPECTATING (9)
-#endif
+// Match open.mp's PlayerState enum (player.hpp).
+constexpr int PLAYER_STATE_NONE       = 0;
+constexpr int PLAYER_STATE_ONFOOT     = 1;
+constexpr int PLAYER_STATE_DRIVER     = 2;
+constexpr int PLAYER_STATE_PASSENGER  = 3;
+constexpr int PLAYER_STATE_WASTED     = 7;
+constexpr int PLAYER_STATE_SPAWNED    = 8;
+constexpr int PLAYER_STATE_SPECTATING = 9;
 
 namespace StreamerApi
 {
@@ -164,11 +139,6 @@ namespace StreamerApi
 	bool GetVehicleVelocity(int vehicleid, float *X, float *Y, float *Z);
 	int  GetVehicleVirtualWorld(int vehicleid);
 	bool GetVehicleZAngle(int vehicleid, float *z_angle);
-
-	// Misc / unused shells (kept so any leftover call compiles if we missed one)
-	int  CreatePlayer();
-	bool DeletePlayer(int playerid);
-	bool UpdatePlayer(int playerid);
 
 	// 3D text labels
 	int  CreatePlayer3DTextLabel(int playerid, const char *text, int color, float x, float y, float z, float drawDistance, int attachedplayer, int attachedvehicle, bool testLOS);

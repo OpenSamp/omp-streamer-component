@@ -81,6 +81,14 @@ namespace
 		if (z) *z = v.z;
 	}
 
+	// Helper for the `if (!entity) { zero-out outputs; return false; }` pattern that shows up
+	// across every getter.
+	bool zeroAndFail(float *x, float *y, float *z)
+	{
+		writeVec3({}, x, y, z);
+		return false;
+	}
+
 	IPlayerObjectData *playerObjects(int playerid)
 	{
 		IPlayer *p = resolvePlayer(playerid);
@@ -340,7 +348,7 @@ namespace StreamerApi
 	bool GetPlayerObjectPos(int playerid, int objectid, float *x, float *y, float *z)
 	{
 		IPlayerObject *obj = playerObject(playerid, objectid);
-		if (!obj) { writeVec3(Vector3(), x, y, z); return false; }
+		if (!obj) { return zeroAndFail(x, y, z); }
 		writeVec3(obj->getPosition(), x, y, z);
 		return true;
 	}
@@ -356,7 +364,7 @@ namespace StreamerApi
 	bool GetPlayerObjectRot(int playerid, int objectid, float *rX, float *rY, float *rZ)
 	{
 		IPlayerObject *obj = playerObject(playerid, objectid);
-		if (!obj) { writeVec3(Vector3(), rX, rY, rZ); return false; }
+		if (!obj) { return zeroAndFail(rX, rY, rZ); }
 		writeVec3(obj->getRotation().ToEuler(), rX, rY, rZ);
 		return true;
 	}
@@ -364,7 +372,7 @@ namespace StreamerApi
 	bool GetObjectPos(int objectid, float *x, float *y, float *z)
 	{
 		IObject *obj = globalObject(objectid);
-		if (!obj) { writeVec3(Vector3(), x, y, z); return false; }
+		if (!obj) { return zeroAndFail(x, y, z); }
 		writeVec3(obj->getPosition(), x, y, z);
 		return true;
 	}
@@ -372,7 +380,7 @@ namespace StreamerApi
 	bool GetObjectRot(int objectid, float *rX, float *rY, float *rZ)
 	{
 		IObject *obj = globalObject(objectid);
-		if (!obj) { writeVec3(Vector3(), rX, rY, rZ); return false; }
+		if (!obj) { return zeroAndFail(rX, rY, rZ); }
 		writeVec3(obj->getRotation().ToEuler(), rX, rY, rZ);
 		return true;
 	}
@@ -550,7 +558,7 @@ namespace StreamerApi
 	bool GetPlayerPos(int id, float *x, float *y, float *z)
 	{
 		IPlayer *p = resolvePlayer(id);
-		if (!p) { writeVec3(Vector3(), x, y, z); return false; }
+		if (!p) { return zeroAndFail(x, y, z); }
 		writeVec3(p->getPosition(), x, y, z);
 		return true;
 	}
@@ -566,7 +574,7 @@ namespace StreamerApi
 	bool GetPlayerCameraPos(int id, float *x, float *y, float *z)
 	{
 		IPlayer *p = resolvePlayer(id);
-		if (!p) { writeVec3(Vector3(), x, y, z); return false; }
+		if (!p) { return zeroAndFail(x, y, z); }
 		writeVec3(p->getCameraPosition(), x, y, z);
 		return true;
 	}
@@ -582,7 +590,7 @@ namespace StreamerApi
 	bool GetPlayerVelocity(int id, float *x, float *y, float *z)
 	{
 		IPlayer *p = resolvePlayer(id);
-		if (!p) { writeVec3(Vector3(), x, y, z); return false; }
+		if (!p) { return zeroAndFail(x, y, z); }
 		writeVec3(p->getVelocity(), x, y, z);
 		return true;
 	}
@@ -641,7 +649,7 @@ namespace StreamerApi
 	bool GetVehiclePos(int id, float *x, float *y, float *z)
 	{
 		IVehicle *v = resolveVehicle(id);
-		if (!v) { writeVec3(Vector3(), x, y, z); return false; }
+		if (!v) { return zeroAndFail(x, y, z); }
 		writeVec3(v->getPosition(), x, y, z);
 		return true;
 	}
@@ -665,7 +673,7 @@ namespace StreamerApi
 	bool GetVehicleVelocity(int id, float *X, float *Y, float *Z)
 	{
 		IVehicle *v = resolveVehicle(id);
-		if (!v) { writeVec3(Vector3(), X, Y, Z); return false; }
+		if (!v) { return zeroAndFail(X, Y, Z); }
 		writeVec3(v->getVelocity(), X, Y, Z);
 		return true;
 	}
@@ -683,10 +691,6 @@ namespace StreamerApi
 		if (z_angle) *z_angle = v->getZAngle();
 		return true;
 	}
-
-	int  CreatePlayer()                                                                       { reportStub("CreatePlayer"); return 0xFFFF; }
-	bool DeletePlayer(int)                                                                    { reportStub("DeletePlayer"); return false; }
-	bool UpdatePlayer(int)                                                                    { reportStub("UpdatePlayer"); return false; }
 
 	int CreatePlayer3DTextLabel(int playerid, const char *text, int color, float x, float y, float z, float drawDistance, int attachedplayer, int attachedvehicle, bool testLOS)
 	{

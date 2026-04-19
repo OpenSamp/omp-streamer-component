@@ -18,21 +18,99 @@
 
 #include "core.h"
 
+namespace
+{
+	// Argument coercion to AMX cell. Floats go through amx_ftoc so they round-trip as Float:
+	// in Pawn. Anything else castable to cell uses static_cast (ints, bools, enum values).
+	inline cell toCell(float v) { return amx_ftoc(v); }
+	inline cell toCell(double v) { float f = static_cast<float>(v); return amx_ftoc(f); }
+	template <typename T>
+	inline cell toCell(T v) { return static_cast<cell>(v); }
+
+	// Push Pawn public arguments in reverse (rightmost first), matching the AMX calling
+	// convention. Recursive so the left-to-right argument pack is consumed right-to-left.
+	inline void pushArgsRev(AMX *) { }
+	template <typename T, typename... Rest>
+	inline void pushArgsRev(AMX *amx, T first, Rest... rest)
+	{
+		pushArgsRev(amx, rest...);
+		amx_Push(amx, toCell(first));
+	}
+
+	// Fire-and-forget: dispatch the public to every registered AMX, ignore return values.
+	template <typename... Args>
+	void dispatchPublic(const char *name, Args... args)
+	{
+		for (AMX *amx : core->getData()->interfaces)
+		{
+			int idx = 0;
+			if (!amx_FindPublic(amx, name, &idx))
+			{
+				pushArgsRev(amx, args...);
+				amx_Exec(amx, nullptr, idx);
+			}
+		}
+	}
+
+	// Break on first interface whose handler returns non-zero. Used where the streamer lets the
+	// first script that claims the event stop the chain (e.g. edit/select dynamic object).
+	template <typename... Args>
+	void dispatchPublicBreakOnTruthy(const char *name, Args... args)
+	{
+		for (AMX *amx : core->getData()->interfaces)
+		{
+			int idx = 0;
+			if (!amx_FindPublic(amx, name, &idx))
+			{
+				pushArgsRev(amx, args...);
+				cell ret = 0;
+				amx_Exec(amx, &ret, idx);
+				if (ret)
+				{
+					return;
+				}
+			}
+		}
+	}
+
+	// Return false if any interface's handler returns zero; used for veto-style events like
+	// OnPlayerShootDynamicObject.
+	template <typename... Args>
+	bool dispatchPublicRequireAll(const char *name, Args... args)
+	{
+		bool allow = true;
+		for (AMX *amx : core->getData()->interfaces)
+		{
+			int idx = 0;
+			if (!amx_FindPublic(amx, name, &idx))
+			{
+				pushArgsRev(amx, args...);
+				cell ret = 0;
+				amx_Exec(amx, &ret, idx);
+				if (!ret)
+				{
+					allow = false;
+				}
+			}
+		}
+		return allow;
+	}
+}
+
 bool Streamer_OnPlayerConnect(int playerid)
 {
 	if (playerid >= 0 && playerid < MAX_PLAYERS)
 	{
-		std::unordered_map<int, Player>::iterator p = core->getData()->players.find(playerid);
-		if (p == core->getData()->players.end())
+		auto &players = core->getData()->players;
+		if (players.find(playerid) == players.end())
 		{
-			Player player(playerid);
-			core->getData()->players.insert(std::make_pair(playerid, player));
+			players.insert(std::make_pair(playerid, Player(playerid)));
 		}
 	}
 	return true;
 }
 
-bool Streamer_OnPlayerDisconnect(int playerid, int reason)
+bool Streamer_OnPlayerDisconnect(int playerid, int /*reason*/)
 {
 	core->getData()->players.erase(playerid);
 	return true;
@@ -40,137 +118,83 @@ bool Streamer_OnPlayerDisconnect(int playerid, int reason)
 
 bool Streamer_OnPlayerSpawn(int playerid)
 {
-	std::unordered_map<int, Player>::iterator p = core->getData()->players.find(playerid);
-	if (p != core->getData()->players.end())
+	auto it = core->getData()->players.find(playerid);
+	if (it != core->getData()->players.end())
 	{
-		p->second.requestingClass = false;
+		it->second.requestingClass = false;
 	}
 	return true;
 }
 
-bool Streamer_OnPlayerRequestClass(int playerid, int classid)
+bool Streamer_OnPlayerRequestClass(int playerid, int /*classid*/)
 {
-	std::unordered_map<int, Player>::iterator p = core->getData()->players.find(playerid);
-	if (p != core->getData()->players.end())
+	auto it = core->getData()->players.find(playerid);
+	if (it != core->getData()->players.end())
 	{
-		p->second.requestingClass = true;
+		it->second.requestingClass = true;
 	}
 	return true;
 }
 
 bool Streamer_OnPlayerEnterCheckpoint(int playerid)
 {
-	std::unordered_map<int, Player>::iterator p = core->getData()->players.find(playerid);
-	if (p != core->getData()->players.end())
-	{
-		if (p->second.activeCheckpoint != p->second.visibleCheckpoint)
-		{
-			int checkpointid = p->second.visibleCheckpoint;
-			p->second.activeCheckpoint = checkpointid;
-			for (std::set<AMX*>::iterator a = core->getData()->interfaces.begin(); a != core->getData()->interfaces.end(); ++a)
-			{
-				int amxIndex = 0;
-				if (!amx_FindPublic(*a, "OnPlayerEnterDynamicCP", &amxIndex))
-				{
-					amx_Push(*a, static_cast<cell>(checkpointid));
-					amx_Push(*a, static_cast<cell>(playerid));
-					amx_Exec(*a, NULL, amxIndex);
-				}
-			}
-		}
-	}
+	auto it = core->getData()->players.find(playerid);
+	if (it == core->getData()->players.end()) return true;
+	Player &player = it->second;
+	if (player.activeCheckpoint == player.visibleCheckpoint) return true;
+
+	int checkpointid = player.visibleCheckpoint;
+	player.activeCheckpoint = checkpointid;
+	dispatchPublic("OnPlayerEnterDynamicCP", playerid, checkpointid);
 	return true;
 }
 
 bool Streamer_OnPlayerLeaveCheckpoint(int playerid)
 {
-	std::unordered_map<int, Player>::iterator p = core->getData()->players.find(playerid);
-	if (p != core->getData()->players.end())
-	{
-		if (p->second.activeCheckpoint == p->second.visibleCheckpoint)
-		{
-			int checkpointid = p->second.activeCheckpoint;
-			p->second.activeCheckpoint = 0;
-			for (std::set<AMX*>::iterator a = core->getData()->interfaces.begin(); a != core->getData()->interfaces.end(); ++a)
-			{
-				int amxIndex = 0;
-				if (!amx_FindPublic(*a, "OnPlayerLeaveDynamicCP", &amxIndex))
-				{
-					amx_Push(*a, static_cast<cell>(checkpointid));
-					amx_Push(*a, static_cast<cell>(playerid));
-					amx_Exec(*a, NULL, amxIndex);
-				}
-			}
-		}
-	}
+	auto it = core->getData()->players.find(playerid);
+	if (it == core->getData()->players.end()) return true;
+	Player &player = it->second;
+	if (player.activeCheckpoint != player.visibleCheckpoint) return true;
+
+	int checkpointid = player.activeCheckpoint;
+	player.activeCheckpoint = 0;
+	dispatchPublic("OnPlayerLeaveDynamicCP", playerid, checkpointid);
 	return true;
 }
 
 bool Streamer_OnPlayerEnterRaceCheckpoint(int playerid)
 {
-	std::unordered_map<int, Player>::iterator p = core->getData()->players.find(playerid);
-	if (p != core->getData()->players.end())
-	{
-		if (p->second.activeRaceCheckpoint != p->second.visibleRaceCheckpoint)
-		{
-			int checkpointid = p->second.visibleRaceCheckpoint;
-			p->second.activeRaceCheckpoint = checkpointid;
-			for (std::set<AMX*>::iterator a = core->getData()->interfaces.begin(); a != core->getData()->interfaces.end(); ++a)
-			{
-				int amxIndex = 0;
-				if (!amx_FindPublic(*a, "OnPlayerEnterDynamicRaceCP", &amxIndex))
-				{
-					amx_Push(*a, static_cast<cell>(checkpointid));
-					amx_Push(*a, static_cast<cell>(playerid));
-					amx_Exec(*a, NULL, amxIndex);
-				}
-			}
-		}
-	}
+	auto it = core->getData()->players.find(playerid);
+	if (it == core->getData()->players.end()) return true;
+	Player &player = it->second;
+	if (player.activeRaceCheckpoint == player.visibleRaceCheckpoint) return true;
+
+	int checkpointid = player.visibleRaceCheckpoint;
+	player.activeRaceCheckpoint = checkpointid;
+	dispatchPublic("OnPlayerEnterDynamicRaceCP", playerid, checkpointid);
 	return true;
 }
 
 bool Streamer_OnPlayerLeaveRaceCheckpoint(int playerid)
 {
-	std::unordered_map<int, Player>::iterator p = core->getData()->players.find(playerid);
-	if (p != core->getData()->players.end())
-	{
-		if (p->second.activeRaceCheckpoint == p->second.visibleRaceCheckpoint)
-		{
-			int checkpointid = p->second.activeRaceCheckpoint;
-			p->second.activeRaceCheckpoint = 0;
-			for (std::set<AMX*>::iterator a = core->getData()->interfaces.begin(); a != core->getData()->interfaces.end(); ++a)
-			{
-				int amxIndex = 0;
-				if (!amx_FindPublic(*a, "OnPlayerLeaveDynamicRaceCP", &amxIndex))
-				{
-					amx_Push(*a, static_cast<cell>(checkpointid));
-					amx_Push(*a, static_cast<cell>(playerid));
-					amx_Exec(*a, NULL, amxIndex);
-				}
-			}
-		}
-	}
+	auto it = core->getData()->players.find(playerid);
+	if (it == core->getData()->players.end()) return true;
+	Player &player = it->second;
+	if (player.activeRaceCheckpoint != player.visibleRaceCheckpoint) return true;
+
+	int checkpointid = player.activeRaceCheckpoint;
+	player.activeRaceCheckpoint = 0;
+	dispatchPublic("OnPlayerLeaveDynamicRaceCP", playerid, checkpointid);
 	return true;
 }
 
 bool Streamer_OnPlayerPickUpPickup(int playerid, int pickupid)
 {
-	for (std::unordered_map<std::pair<int, int>, int, pair_hash>::iterator i = core->getData()->internalPickups.begin(); i != core->getData()->internalPickups.end(); ++i)
+	for (const auto &entry : core->getData()->internalPickups)
 	{
-		if (i->second == pickupid)
+		if (entry.second == pickupid)
 		{
-			int dynPickupId = i->first.first;
-			for (std::set<AMX*>::iterator a = core->getData()->interfaces.begin(); a != core->getData()->interfaces.end(); ++a)
-			{
-				int amxIndex = 0;
-				if (!amx_FindPublic(*a, "OnPlayerPickUpDynamicPickup", &amxIndex))
-				{
-					amx_Push(*a, static_cast<cell>(dynPickupId));
-					amx_Push(*a, static_cast<cell>(playerid));
-					amx_Exec(*a, NULL, amxIndex);
-				}
-			}
+			dispatchPublic("OnPlayerPickUpDynamicPickup", playerid, entry.first.first);
 			break;
 		}
 	}
@@ -179,185 +203,89 @@ bool Streamer_OnPlayerPickUpPickup(int playerid, int pickupid)
 
 bool Streamer_OnPlayerEditObject(int playerid, bool playerobject, int objectid, int response, float fX, float fY, float fZ, float fRotX, float fRotY, float fRotZ)
 {
-	if (playerobject)
+	if (!playerobject) return false;
+
+	auto playerIt = core->getData()->players.find(playerid);
+	if (playerIt == core->getData()->players.end()) return false;
+
+	for (const auto &internal : playerIt->second.internalObjects)
 	{
-		std::unordered_map<int, Player>::iterator p = core->getData()->players.find(playerid);
-		if (p != core->getData()->players.end())
+		if (internal.second != objectid) continue;
+
+		int dynObjectId = internal.first;
+		if (response == EDIT_RESPONSE_CANCEL || response == EDIT_RESPONSE_FINAL)
 		{
-			for (std::unordered_map<int, int>::iterator i = p->second.internalObjects.begin(); i != p->second.internalObjects.end(); ++i)
+			auto objIt = core->getData()->objects.find(dynObjectId);
+			if (objIt != core->getData()->objects.end())
 			{
-				if (i->second == objectid)
+				auto &obj = objIt->second;
+				if (obj->comparableStreamDistance < STREAMER_STATIC_DISTANCE_CUTOFF
+					&& obj->originalComparableStreamDistance > STREAMER_STATIC_DISTANCE_CUTOFF)
 				{
-					int dynObjectId = i->first;
-					if (response == EDIT_RESPONSE_CANCEL || response == EDIT_RESPONSE_FINAL)
-					{
-						std::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(dynObjectId);
-						if (o != core->getData()->objects.end())
-						{
-							if (o->second->comparableStreamDistance < STREAMER_STATIC_DISTANCE_CUTOFF && o->second->originalComparableStreamDistance > STREAMER_STATIC_DISTANCE_CUTOFF)
-							{
-								o->second->comparableStreamDistance = o->second->originalComparableStreamDistance;
-								o->second->originalComparableStreamDistance = -1.0f;
-							}
-						}
-					}
-					for (std::set<AMX*>::iterator a = core->getData()->interfaces.begin(); a != core->getData()->interfaces.end(); ++a)
-					{
-						int amxIndex = 0;
-						cell amxRetVal = 0;
-						if (!amx_FindPublic(*a, "OnPlayerEditDynamicObject", &amxIndex))
-						{
-							amx_Push(*a, amx_ftoc(fRotZ));
-							amx_Push(*a, amx_ftoc(fRotY));
-							amx_Push(*a, amx_ftoc(fRotX));
-							amx_Push(*a, amx_ftoc(fZ));
-							amx_Push(*a, amx_ftoc(fY));
-							amx_Push(*a, amx_ftoc(fX));
-							amx_Push(*a, static_cast<cell>(response));
-							amx_Push(*a, static_cast<cell>(dynObjectId));
-							amx_Push(*a, static_cast<cell>(playerid));
-							amx_Exec(*a, &amxRetVal, amxIndex);
-							if (amxRetVal)
-							{
-								break;
-							}
-						}
-					}
-					return true;
+					obj->comparableStreamDistance = obj->originalComparableStreamDistance;
+					obj->originalComparableStreamDistance = -1.0f;
 				}
 			}
 		}
+		dispatchPublicBreakOnTruthy("OnPlayerEditDynamicObject",
+			playerid, dynObjectId, response, fX, fY, fZ, fRotX, fRotY, fRotZ);
+		return true;
 	}
 	return false;
 }
 
 bool Streamer_OnPlayerSelectObject(int playerid, int type, int objectid, int modelid, float x, float y, float z)
 {
-	if (type == SELECT_OBJECT_PLAYER_OBJECT)
+	if (type != SELECT_OBJECT_PLAYER_OBJECT) return false;
+
+	auto playerIt = core->getData()->players.find(playerid);
+	if (playerIt == core->getData()->players.end()) return false;
+
+	for (const auto &internal : playerIt->second.internalObjects)
 	{
-		std::unordered_map<int, Player>::iterator p = core->getData()->players.find(playerid);
-		if (p != core->getData()->players.end())
-		{
-			for (std::unordered_map<int, int>::iterator i = p->second.internalObjects.begin(); i != p->second.internalObjects.end(); ++i)
-			{
-				if (i->second == objectid)
-				{
-					int dynObjectId = i->first;
-					for (std::set<AMX*>::iterator a = core->getData()->interfaces.begin(); a != core->getData()->interfaces.end(); ++a)
-					{
-						int amxIndex = 0;
-						cell amxRetVal = 0;
-						if (!amx_FindPublic(*a, "OnPlayerSelectDynamicObject", &amxIndex))
-						{
-							amx_Push(*a, amx_ftoc(z));
-							amx_Push(*a, amx_ftoc(y));
-							amx_Push(*a, amx_ftoc(x));
-							amx_Push(*a, static_cast<cell>(modelid));
-							amx_Push(*a, static_cast<cell>(dynObjectId));
-							amx_Push(*a, static_cast<cell>(playerid));
-							amx_Exec(*a, &amxRetVal, amxIndex);
-							if (amxRetVal)
-							{
-								break;
-							}
-						}
-					}
-					return true;
-				}
-			}
-		}
+		if (internal.second != objectid) continue;
+		dispatchPublicBreakOnTruthy("OnPlayerSelectDynamicObject",
+			playerid, internal.first, modelid, x, y, z);
+		return true;
 	}
 	return false;
 }
 
 bool Streamer_OnPlayerWeaponShot(int playerid, int weaponid, int hittype, int hitid, float x, float y, float z)
 {
-	bool retVal = true;
-	if (hittype == BULLET_HIT_TYPE_PLAYER_OBJECT)
+	if (hittype != BULLET_HIT_TYPE_PLAYER_OBJECT) return true;
+
+	auto playerIt = core->getData()->players.find(playerid);
+	if (playerIt == core->getData()->players.end()) return true;
+
+	for (const auto &internal : playerIt->second.internalObjects)
 	{
-		std::unordered_map<int, Player>::iterator p = core->getData()->players.find(playerid);
-		if (p != core->getData()->players.end())
-		{
-			for (std::unordered_map<int, int>::iterator i = p->second.internalObjects.begin(); i != p->second.internalObjects.end(); ++i)
-			{
-				if (i->second == hitid)
-				{
-					int objectid = i->first;
-					for (std::set<AMX*>::iterator a = core->getData()->interfaces.begin(); a != core->getData()->interfaces.end(); ++a)
-					{
-						int amxIndex = 0;
-						cell amxRetVal = 0;
-						if (!amx_FindPublic(*a, "OnPlayerShootDynamicObject", &amxIndex))
-						{
-							amx_Push(*a, amx_ftoc(z));
-							amx_Push(*a, amx_ftoc(y));
-							amx_Push(*a, amx_ftoc(x));
-							amx_Push(*a, static_cast<cell>(objectid));
-							amx_Push(*a, static_cast<cell>(weaponid));
-							amx_Push(*a, static_cast<cell>(playerid));
-							amx_Exec(*a, &amxRetVal, amxIndex);
-							if (!amxRetVal)
-							{
-								retVal = false;
-							}
-						}
-					}
-					break;
-				}
-			}
-		}
+		if (internal.second != hitid) continue;
+		return dispatchPublicRequireAll("OnPlayerShootDynamicObject",
+			playerid, weaponid, internal.first, x, y, z);
 	}
-	return retVal;
+	return true;
 }
 
 bool Streamer_OnPlayerGiveDamageActor(int playerid, int actorid, float amount, int weaponid, int bodypart)
 {
-	for (std::unordered_map<std::pair<int, int>, int, pair_hash>::iterator i = core->getData()->internalActors.begin(); i != core->getData()->internalActors.end(); ++i)
+	for (const auto &entry : core->getData()->internalActors)
 	{
-		if (i->second == actorid)
-		{
-			int dynActorId = i->first.first;
-			for (std::set<AMX*>::iterator a = core->getData()->interfaces.begin(); a != core->getData()->interfaces.end(); ++a)
-			{
-				int amxIndex = 0;
-				cell amxRetVal = 0;
-				if (!amx_FindPublic(*a, "OnPlayerGiveDamageDynamicActor", &amxIndex))
-				{
-					amx_Push(*a, static_cast<cell>(bodypart));
-					amx_Push(*a, static_cast<cell>(weaponid));
-					amx_Push(*a, amx_ftoc(amount));
-					amx_Push(*a, static_cast<cell>(dynActorId));
-					amx_Push(*a, static_cast<cell>(playerid));
-					amx_Exec(*a, &amxRetVal, amxIndex);
-					if (amxRetVal)
-					{
-						break;
-					}
-				}
-			}
-			return true;
-		}
+		if (entry.second != actorid) continue;
+		dispatchPublicBreakOnTruthy("OnPlayerGiveDamageDynamicActor",
+			playerid, entry.first.first, amount, weaponid, bodypart);
+		return true;
 	}
 	return false;
 }
 
 bool Streamer_OnActorStreamIn(int actorid, int forplayerid)
 {
-	for (std::unordered_map<std::pair<int, int>, int, pair_hash>::iterator i = core->getData()->internalActors.begin(); i != core->getData()->internalActors.end(); ++i)
+	for (const auto &entry : core->getData()->internalActors)
 	{
-		if (i->second == actorid)
+		if (entry.second == actorid)
 		{
-			int dynActorId = i->first.first;
-			for (std::set<AMX*>::iterator a = core->getData()->interfaces.begin(); a != core->getData()->interfaces.end(); ++a)
-			{
-				int amxIndex = 0;
-				if (!amx_FindPublic(*a, "OnDynamicActorStreamIn", &amxIndex))
-				{
-					amx_Push(*a, static_cast<cell>(forplayerid));
-					amx_Push(*a, static_cast<cell>(dynActorId));
-					amx_Exec(*a, NULL, amxIndex);
-				}
-			}
+			dispatchPublic("OnDynamicActorStreamIn", entry.first.first, forplayerid);
 			break;
 		}
 	}
@@ -366,21 +294,11 @@ bool Streamer_OnActorStreamIn(int actorid, int forplayerid)
 
 bool Streamer_OnActorStreamOut(int actorid, int forplayerid)
 {
-	for (std::unordered_map<std::pair<int, int>, int, pair_hash>::iterator i = core->getData()->internalActors.begin(); i != core->getData()->internalActors.end(); ++i)
+	for (const auto &entry : core->getData()->internalActors)
 	{
-		if (i->second == actorid)
+		if (entry.second == actorid)
 		{
-			int dynActorId = i->first.first;
-			for (std::set<AMX*>::iterator a = core->getData()->interfaces.begin(); a != core->getData()->interfaces.end(); ++a)
-			{
-				int amxIndex = 0;
-				if (!amx_FindPublic(*a, "OnDynamicActorStreamOut", &amxIndex))
-				{
-					amx_Push(*a, static_cast<cell>(forplayerid));
-					amx_Push(*a, static_cast<cell>(dynActorId));
-					amx_Exec(*a, NULL, amxIndex);
-				}
-			}
+			dispatchPublic("OnDynamicActorStreamOut", entry.first.first, forplayerid);
 			break;
 		}
 	}

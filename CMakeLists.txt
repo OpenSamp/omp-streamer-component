@@ -5,19 +5,17 @@ set(PLUGIN_VERSION "2.9.6")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if (MSVC)
-    add_definitions("/MP")
+if(MSVC)
+	add_definitions("/MP")
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/lib/cmake-modules")
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/lib/eigen/cmake")
 
+# open.mp SDK (interface target; propagates glm, robin-hood, span-lite, string-view-lite,
+# NOMINMAX, GLM_FORCE_*, /fp:strict, etc.)
 add_subdirectory(lib/open.mp-sdk)
-
-include_directories(${PROJECT_SOURCE_DIR}/lib/pawn)
-
-include_directories(${PROJECT_SOURCE_DIR}/lib/boost)
 
 if(EIGEN3_INCLUDE_DIR)
 	file(TO_CMAKE_PATH ${EIGEN3_INCLUDE_DIR} EIGEN3_INCLUDE_DIR)
@@ -27,35 +25,5 @@ else()
 endif()
 
 find_package(Eigen3 3.3.4 REQUIRED)
-include_directories(${EIGEN3_INCLUDE_DIR})
-
-set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY True)
-set(CMAKE_SKIP_PACKAGE_ALL_DEPENDENCY True)
 
 add_subdirectory(src)
-
-set(CPACK_PACKAGE_VERSION ${PLUGIN_VERSION})
-
-if(COMMIT_ID)
-	string(TIMESTAMP CURRENT_DATE "%Y%m%d")
-	set(PACKAGE_FILE_NAME streamer-${PLUGIN_VERSION}-${CURRENT_DATE}-${COMMIT_ID})
-else()
-	set(PACKAGE_FILE_NAME streamer-${PLUGIN_VERSION})
-endif()
-
-set(CPACK_OUTPUT_FILE_PREFIX package/${PACKAGE_FILE_NAME})
-
-if(WIN32)
-	set(CPACK_PACKAGE_FILE_NAME ${PACKAGE_FILE_NAME}-win32)
-	set(CPACK_GENERATOR ZIP)
-else()
-	set(CPACK_PACKAGE_FILE_NAME ${PACKAGE_FILE_NAME}-linux)
-	set(CPACK_GENERATOR TGZ)
-endif()
-
-if(CPACK_OUTPUT_FILE_POSTFIX)
-	string(TOLOWER "${CPACK_OUTPUT_FILE_POSTFIX}" CPACK_OUTPUT_FILE_POSTFIX)
-	set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME}-${CPACK_OUTPUT_FILE_POSTFIX})
-endif()
-
-include(CPack)
