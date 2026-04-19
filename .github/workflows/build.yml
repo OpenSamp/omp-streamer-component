@@ -3,125 +3,107 @@ name: Build
 on:
   workflow_dispatch:
   push:
-    branches:
-      - 'master'
+    branches: [master]
   pull_request:
-    branches:
-      - '*'
-      - '*/*'
-      - '**'
+    branches: ['*', '*/*', '**']
 
 jobs:
-  build-windows-release:
+  windows:
+    name: windows-${{ matrix.arch }}-${{ matrix.config }}
     runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: recursive
-
-    - name: Declare github variables
-      id: vars
-      shell: bash
-      run: |
-        echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-        echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-
-    - name: Setup Python
-      uses: actions/setup-python@v2
-
-    - name: Install CMake
-      uses: lukka/get-cmake@v3.26.0
-
-    - name: Generate build files
-      run: mkdir build && cd build && cmake .. -G "Visual Studio 17 2022" -A Win32
-
-    - name: Build
-      run: |
-        cd build
-        cmake --build . --config Release
-
-    - name: Get current time
-      uses: josStorer/get-current-time@v2
-      id: current-time
-      with:
-        format: YYYYMMDD
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: streamer-win-release-${{ steps.current-time.outputs.formattedTime }}-${{ steps.vars.outputs.sha_short }}
-        path: build/bin/Release
-  build-windows-debug:
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: recursive
-
-    - name: Declare github variables
-      id: vars
-      shell: bash
-      run: |
-        echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-        echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-
-    - name: Setup Python
-      uses: actions/setup-python@v2
-
-    - name: Install CMake
-      uses: lukka/get-cmake@v3.26.0
-
-    - name: Generate build files
-      run: mkdir build && cd build && cmake .. -G "Visual Studio 17 2022" -A Win32
-
-    - name: Build
-      run: |
-        cd build
-        cmake --build . --config Debug
-
-    - name: Get current time
-      uses: josStorer/get-current-time@v2
-      id: current-time
-      with:
-        format: YYYYMMDD
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: streamer-win-debug-${{ steps.current-time.outputs.formattedTime }}-${{ steps.vars.outputs.sha_short }}
-        path: build/bin/Debug
-  build-linux:
-    runs-on: ubuntu-latest
-
     strategy:
+      fail-fast: false
       matrix:
-        config: [Debug, Release]
-
+        arch: [x86, x64]
+        config: [Release, Debug]
     steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: recursive
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-    - name: Declare github variables
-      id: vars
-      shell: bash
-      run: |
-        echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-        echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+      - name: Declare github variables
+        id: vars
+        shell: bash
+        run: |
+          echo "branch=${GITHUB_REF#refs/heads/}" >> "$GITHUB_OUTPUT"
+          echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "date=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
 
-    - name: Build
-      run: |
-        cd docker
-        CONFIG=${{ matrix.config == 'Debug' && 'Debug' || 'MinSizeRel' }} ./build.sh
+      - name: Install CMake
+        uses: lukka/get-cmake@latest
 
-    - name: Get current time
-      uses: josStorer/get-current-time@v2
-      id: current-time
-      with:
-        format: YYYYMMDD
+      - name: Map arch to -A flag
+        id: arch
+        shell: bash
+        run: |
+          if [ "${{ matrix.arch }}" = "x86" ]; then
+            echo "cmake_arch=Win32" >> "$GITHUB_OUTPUT"
+          else
+            echo "cmake_arch=x64" >> "$GITHUB_OUTPUT"
+          fi
 
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: streamer-linux-${{ matrix.config == 'Debug' && 'debug' || 'release' }}-${{ steps.current-time.outputs.formattedTime }}-${{ steps.vars.outputs.sha_short }}
-        path: docker/build/bin
+      - name: Configure
+        run: >
+          cmake -B build
+          -G "Visual Studio 17 2022"
+          -A ${{ steps.arch.outputs.cmake_arch }}
+          -DSTREAMER_ARCH=${{ matrix.arch }}
+          -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+
+      - name: Build
+        run: cmake --build build --config ${{ matrix.config }} -j
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: streamer-windows-${{ matrix.arch }}-${{ matrix.config }}-${{ steps.vars.outputs.date }}-${{ steps.vars.outputs.sha_short }}
+          path: build/bin/${{ matrix.config }}/streamer.dll
+          if-no-files-found: error
+
+  linux:
+    name: linux-${{ matrix.arch }}-${{ matrix.config }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86, x64]
+        config: [Release, Debug]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Declare github variables
+        id: vars
+        shell: bash
+        run: |
+          echo "branch=${GITHUB_REF#refs/heads/}" >> "$GITHUB_OUTPUT"
+          echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "date=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Install toolchain
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build
+          if [ "${{ matrix.arch }}" = "x86" ]; then
+            sudo apt-get install -y gcc-multilib g++-multilib libstdc++6:i386 libc6-dev-i386
+          fi
+
+      - name: Configure
+        run: >
+          cmake -B build
+          -G Ninja
+          -DCMAKE_BUILD_TYPE=${{ matrix.config }}
+          -DSTREAMER_ARCH=${{ matrix.arch }}
+          -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: streamer-linux-${{ matrix.arch }}-${{ matrix.config }}-${{ steps.vars.outputs.date }}-${{ steps.vars.outputs.sha_short }}
+          path: build/bin/streamer.so
+          if-no-files-found: error
