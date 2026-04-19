@@ -43,14 +43,16 @@ jobs:
           fi
 
       - name: Configure
-        run: >
-          cmake -B build
-          -G "Visual Studio 17 2022"
-          -A ${{ steps.arch.outputs.cmake_arch }}
-          -DSTREAMER_ARCH=${{ matrix.arch }}
-          -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+        shell: bash
+        run: |
+          cmake -B build \
+            -G "Visual Studio 17 2022" \
+            -A ${{ steps.arch.outputs.cmake_arch }} \
+            -DSTREAMER_ARCH=${{ matrix.arch }} \
+            "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
 
       - name: Build
+        shell: bash
         run: cmake --build build --config ${{ matrix.config }} -j
 
       - name: Upload artifact
@@ -91,12 +93,12 @@ jobs:
           fi
 
       - name: Configure
-        run: >
-          cmake -B build
-          -G Ninja
-          -DCMAKE_BUILD_TYPE=${{ matrix.config }}
-          -DSTREAMER_ARCH=${{ matrix.arch }}
-          -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+        run: |
+          cmake -B build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
+            -DSTREAMER_ARCH=${{ matrix.arch }} \
+            "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
 
       - name: Build
         run: cmake --build build -j

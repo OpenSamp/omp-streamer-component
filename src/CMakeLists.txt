@@ -37,6 +37,7 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE main.h)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
 	${PROJECT_SOURCE_DIR}/lib/pawn
+	${PROJECT_SOURCE_DIR}/lib/pawn/amx
 	${PROJECT_SOURCE_DIR}/lib/boost
 	${EIGEN3_INCLUDE_DIR}
 )
