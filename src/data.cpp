@@ -32,7 +32,11 @@ Data::Data()
 	globalMaxItems[STREAMER_TYPE_3D_TEXT_LABEL] = std::numeric_limits<std::size_t>::max();
 	globalMaxItems[STREAMER_TYPE_AREA] = std::numeric_limits<std::size_t>::max();
 	globalMaxItems[STREAMER_TYPE_ACTOR] = std::numeric_limits<std::size_t>::max();
-	globalMaxVisibleItems[STREAMER_TYPE_OBJECT] = 500;
+	// Per-player visible cap — bumped from the legacy SA-MP default of 500 to match the full
+	// 0.3.7/open.mp per-player object pool. Below this, the streamer silently drops the farthest
+	// items so the effective stream radius looks smaller than what Streamer_SetCellDistance /
+	// per-item streamDistance suggested.
+	globalMaxVisibleItems[STREAMER_TYPE_OBJECT] = 1000;
 	globalMaxVisibleItems[STREAMER_TYPE_PICKUP] = 4096;
 	globalMaxVisibleItems[STREAMER_TYPE_MAP_ICON] = 100;
 	globalMaxVisibleItems[STREAMER_TYPE_3D_TEXT_LABEL] = 1024;
