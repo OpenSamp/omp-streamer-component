@@ -18,7 +18,7 @@
 
 #include "core.h"
 
-PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerConnect(int playerid)
+bool Streamer_OnPlayerConnect(int playerid)
 {
 	if (playerid >= 0 && playerid < MAX_PLAYERS)
 	{
@@ -32,13 +32,13 @@ PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerConnect(int playerid)
 	return true;
 }
 
-PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerDisconnect(int playerid, int reason)
+bool Streamer_OnPlayerDisconnect(int playerid, int reason)
 {
 	core->getData()->players.erase(playerid);
 	return true;
 }
 
-PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerSpawn(int playerid)
+bool Streamer_OnPlayerSpawn(int playerid)
 {
 	std::unordered_map<int, Player>::iterator p = core->getData()->players.find(playerid);
 	if (p != core->getData()->players.end())
@@ -48,7 +48,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerSpawn(int playerid)
 	return true;
 }
 
-PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerRequestClass(int playerid, int classid)
+bool Streamer_OnPlayerRequestClass(int playerid, int classid)
 {
 	std::unordered_map<int, Player>::iterator p = core->getData()->players.find(playerid);
 	if (p != core->getData()->players.end())
@@ -58,7 +58,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerRequestClass(int playerid, int classid)
 	return true;
 }
 
-PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerEnterCheckpoint(int playerid)
+bool Streamer_OnPlayerEnterCheckpoint(int playerid)
 {
 	std::unordered_map<int, Player>::iterator p = core->getData()->players.find(playerid);
 	if (p != core->getData()->players.end())
@@ -82,7 +82,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerEnterCheckpoint(int playerid)
 	return true;
 }
 
-PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerLeaveCheckpoint(int playerid)
+bool Streamer_OnPlayerLeaveCheckpoint(int playerid)
 {
 	std::unordered_map<int, Player>::iterator p = core->getData()->players.find(playerid);
 	if (p != core->getData()->players.end())
@@ -106,7 +106,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerLeaveCheckpoint(int playerid)
 	return true;
 }
 
-PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerEnterRaceCheckpoint(int playerid)
+bool Streamer_OnPlayerEnterRaceCheckpoint(int playerid)
 {
 	std::unordered_map<int, Player>::iterator p = core->getData()->players.find(playerid);
 	if (p != core->getData()->players.end())
@@ -130,7 +130,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerEnterRaceCheckpoint(int playerid)
 	return true;
 }
 
-PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerLeaveRaceCheckpoint(int playerid)
+bool Streamer_OnPlayerLeaveRaceCheckpoint(int playerid)
 {
 	std::unordered_map<int, Player>::iterator p = core->getData()->players.find(playerid);
 	if (p != core->getData()->players.end())
@@ -154,7 +154,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerLeaveRaceCheckpoint(int playerid)
 	return true;
 }
 
-PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerPickUpPickup(int playerid, int pickupid)
+bool Streamer_OnPlayerPickUpPickup(int playerid, int pickupid)
 {
 	for (std::unordered_map<std::pair<int, int>, int, pair_hash>::iterator i = core->getData()->internalPickups.begin(); i != core->getData()->internalPickups.end(); ++i)
 	{
@@ -177,7 +177,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerPickUpPickup(int playerid, int pickupid)
 	return true;
 }
 
-PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerEditObject(int playerid, bool playerobject, int objectid, int response, float fX, float fY, float fZ, float fRotX, float fRotY, float fRotZ)
+bool Streamer_OnPlayerEditObject(int playerid, bool playerobject, int objectid, int response, float fX, float fY, float fZ, float fRotX, float fRotY, float fRotZ)
 {
 	if (playerobject)
 	{
@@ -231,7 +231,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerEditObject(int playerid, bool playerobjec
 	return false;
 }
 
-PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerSelectObject(int playerid, int type, int objectid, int modelid, float x, float y, float z)
+bool Streamer_OnPlayerSelectObject(int playerid, int type, int objectid, int modelid, float x, float y, float z)
 {
 	if (type == SELECT_OBJECT_PLAYER_OBJECT)
 	{
@@ -270,7 +270,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerSelectObject(int playerid, int type, int 
 	return false;
 }
 
-PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerWeaponShot(int playerid, int weaponid, int hittype, int hitid, float x, float y, float z)
+bool Streamer_OnPlayerWeaponShot(int playerid, int weaponid, int hittype, int hitid, float x, float y, float z)
 {
 	bool retVal = true;
 	if (hittype == BULLET_HIT_TYPE_PLAYER_OBJECT)
@@ -310,7 +310,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerWeaponShot(int playerid, int weaponid, in
 	return retVal;
 }
 
-PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerGiveDamageActor(int playerid, int actorid, float amount, int weaponid, int bodypart)
+bool Streamer_OnPlayerGiveDamageActor(int playerid, int actorid, float amount, int weaponid, int bodypart)
 {
 	for (std::unordered_map<std::pair<int, int>, int, pair_hash>::iterator i = core->getData()->internalActors.begin(); i != core->getData()->internalActors.end(); ++i)
 	{
@@ -341,7 +341,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL OnPlayerGiveDamageActor(int playerid, int actorid
 	return false;
 }
 
-PLUGIN_EXPORT bool PLUGIN_CALL OnActorStreamIn(int actorid, int forplayerid)
+bool Streamer_OnActorStreamIn(int actorid, int forplayerid)
 {
 	for (std::unordered_map<std::pair<int, int>, int, pair_hash>::iterator i = core->getData()->internalActors.begin(); i != core->getData()->internalActors.end(); ++i)
 	{
@@ -364,7 +364,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL OnActorStreamIn(int actorid, int forplayerid)
 	return true;
 }
 
-PLUGIN_EXPORT bool PLUGIN_CALL OnActorStreamOut(int actorid, int forplayerid)
+bool Streamer_OnActorStreamOut(int actorid, int forplayerid)
 {
 	for (std::unordered_map<std::pair<int, int>, int, pair_hash>::iterator i = core->getData()->internalActors.begin(); i != core->getData()->internalActors.end(); ++i)
 	{

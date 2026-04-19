@@ -154,7 +154,7 @@ void Streamer::startManualUpdate(Player &player, int type)
 		{
 			if (player.delayedUpdateFreeze)
 			{
-				sampgdk::TogglePlayerControllable(player.playerId, true);
+				StreamerApi::TogglePlayerControllable(player.playerId, true);
 			}
 			player.delayedUpdate = false;
 		}
@@ -216,20 +216,20 @@ void Streamer::performPlayerUpdate(Player &player, bool automatic)
 	bool update = true;
 	if (automatic)
 	{
-		player.interiorId = sampgdk::GetPlayerInterior(player.playerId);
-		player.worldId = sampgdk::GetPlayerVirtualWorld(player.playerId);
+		player.interiorId = StreamerApi::GetPlayerInterior(player.playerId);
+		player.worldId = StreamerApi::GetPlayerVirtualWorld(player.playerId);
 		if (!player.updateUsingCameraPosition)
 		{
-			int state = sampgdk::GetPlayerState(player.playerId);
+			int state = StreamerApi::GetPlayerState(player.playerId);
 			if ((state != PLAYER_STATE_NONE && state != PLAYER_STATE_WASTED) || (state == PLAYER_STATE_SPECTATING && !player.requestingClass))
 			{
-				if (!sampgdk::IsPlayerInAnyVehicle(player.playerId))
+				if (!StreamerApi::IsPlayerInAnyVehicle(player.playerId))
 				{
-					sampgdk::GetPlayerPos(player.playerId, &player.position[0], &player.position[1], &player.position[2]);
+					StreamerApi::GetPlayerPos(player.playerId, &player.position[0], &player.position[1], &player.position[2]);
 				}
 				else
 				{
-					sampgdk::GetVehiclePos(sampgdk::GetPlayerVehicleID(player.playerId), &player.position[0], &player.position[1], &player.position[2]);
+					StreamerApi::GetVehiclePos(StreamerApi::GetPlayerVehicleID(player.playerId), &player.position[0], &player.position[1], &player.position[2]);
 				}
 				if (player.position != position)
 				{
@@ -237,11 +237,11 @@ void Streamer::performPlayerUpdate(Player &player, bool automatic)
 					Eigen::Vector3f velocity = Eigen::Vector3f::Zero();
 					if (state == PLAYER_STATE_ONFOOT)
 					{
-						sampgdk::GetPlayerVelocity(player.playerId, &velocity[0], &velocity[1], &velocity[2]);
+						StreamerApi::GetPlayerVelocity(player.playerId, &velocity[0], &velocity[1], &velocity[2]);
 					}
 					else if (state == PLAYER_STATE_DRIVER || state == PLAYER_STATE_PASSENGER)
 					{
-						sampgdk::GetVehicleVelocity(sampgdk::GetPlayerVehicleID(player.playerId), &velocity[0], &velocity[1], &velocity[2]);
+						StreamerApi::GetVehicleVelocity(StreamerApi::GetPlayerVehicleID(player.playerId), &velocity[0], &velocity[1], &velocity[2]);
 					}
 					float velocityNorm = velocity.squaredNorm();
 					if (velocityNorm > std::get<0>(velocityBoundaries) && velocityNorm < std::get<1>(velocityBoundaries))
@@ -261,14 +261,14 @@ void Streamer::performPlayerUpdate(Player &player, bool automatic)
 		}
 		else
 		{
-			sampgdk::GetPlayerCameraPos(player.playerId, &player.position[0], &player.position[1], &player.position[2]);
+			StreamerApi::GetPlayerCameraPos(player.playerId, &player.position[0], &player.position[1], &player.position[2]);
 		}
 		if (player.delayedCheckpoint)
 		{
 			std::unordered_map<int, Item::SharedCheckpoint>::iterator c = core->getData()->checkpoints.find(player.delayedCheckpoint);
 			if (c != core->getData()->checkpoints.end())
 			{
-				sampgdk::SetPlayerCheckpoint(player.playerId, c->second->position[0], c->second->position[1], c->second->position[2], c->second->size);
+				StreamerApi::SetPlayerCheckpoint(player.playerId, c->second->position[0], c->second->position[1], c->second->position[2], c->second->size);
 				if (c->second->streamCallbacks)
 				{
 					streamInCallbacks.push_back(std::make_tuple(STREAMER_TYPE_CP, c->first, player.playerId));
@@ -282,7 +282,7 @@ void Streamer::performPlayerUpdate(Player &player, bool automatic)
 			std::unordered_map<int, Item::SharedRaceCheckpoint>::iterator r = core->getData()->raceCheckpoints.find(player.delayedRaceCheckpoint);
 			if (r != core->getData()->raceCheckpoints.end())
 			{
-				sampgdk::SetPlayerRaceCheckpoint(player.playerId, r->second->type, r->second->position[0], r->second->position[1], r->second->position[2], r->second->next[0], r->second->next[1], r->second->next[2], r->second->size);
+				StreamerApi::SetPlayerRaceCheckpoint(player.playerId, r->second->type, r->second->position[0], r->second->position[1], r->second->position[2], r->second->next[0], r->second->next[1], r->second->next[2], r->second->size);
 				if (r->second->streamCallbacks)
 				{
 					streamInCallbacks.push_back(std::make_tuple(STREAMER_TYPE_RACE_CP, r->first, player.playerId));
@@ -611,7 +611,7 @@ void Streamer::executeCallbacks()
 
 void Streamer::discoverActors(Player &player, const std::vector<SharedCell> &cells)
 {
-	if (!sampgdk::IsPlayerNPC(player.playerId))
+	if (!StreamerApi::IsPlayerNPC(player.playerId))
 	{
 		for (std::vector<SharedCell>::const_iterator c = cells.begin(); c != cells.end(); ++c)
 		{
@@ -650,7 +650,7 @@ void Streamer::streamActors()
 		std::unordered_map<std::pair<int, int>, Item::SharedActor, pair_hash>::iterator d = core->getData()->discoveredActors.find(i->first);
 		if (d == core->getData()->discoveredActors.end())
 		{
-			sampgdk::DestroyActor(i->second);
+			StreamerApi::DestroyActor(i->second);
 			i = core->getData()->internalActors.erase(i);
 		}
 		else
@@ -671,17 +671,17 @@ void Streamer::streamActors()
 		{
 			break;
 		}
-		int internalId = sampgdk::CreateActor(s->second.second->modelId, s->second.second->position[0], s->second.second->position[1], s->second.second->position[2], s->second.second->rotation);
+		int internalId = StreamerApi::CreateActor(s->second.second->modelId, s->second.second->position[0], s->second.second->position[1], s->second.second->position[2], s->second.second->rotation);
 		if (internalId == INVALID_ACTOR_ID)
 		{
 			break;
 		}
-		sampgdk::SetActorInvulnerable(internalId, s->second.second->invulnerable);
-		sampgdk::SetActorHealth(internalId, s->second.second->health);
-		sampgdk::SetActorVirtualWorld(internalId, s->second.first);
+		StreamerApi::SetActorInvulnerable(internalId, s->second.second->invulnerable);
+		StreamerApi::SetActorHealth(internalId, s->second.second->health);
+		StreamerApi::SetActorVirtualWorld(internalId, s->second.first);
 		if (s->second.second->anim)
 		{
-			sampgdk::ApplyActorAnimation(internalId, s->second.second->anim->lib.c_str(), s->second.second->anim->name.c_str(), s->second.second->anim->delta, s->second.second->anim->loop, s->second.second->anim->lockx, s->second.second->anim->locky, s->second.second->anim->freeze, s->second.second->anim->time);
+			StreamerApi::ApplyActorAnimation(internalId, s->second.second->anim->lib.c_str(), s->second.second->anim->name.c_str(), s->second.second->anim->delta, s->second.second->anim->loop, s->second.second->anim->lockx, s->second.second->anim->locky, s->second.second->anim->freeze, s->second.second->anim->time);
 		}
 		core->getData()->internalActors.insert(std::make_pair(std::make_pair(s->second.second->actorId, s->second.first), internalId));
 	}
@@ -689,7 +689,7 @@ void Streamer::streamActors()
 
 void Streamer::processAreas(Player &player, const std::vector<SharedCell> &cells)
 {
-	int state = sampgdk::GetPlayerState(player.playerId);
+	int state = StreamerApi::GetPlayerState(player.playerId);
 	for (std::vector<SharedCell>::const_iterator c = cells.begin(); c != cells.end(); ++c)
 	{
 		for (std::unordered_map<int, Item::SharedArea>::const_iterator a = (*c)->areas.begin(); a != (*c)->areas.end(); ++a)
@@ -757,7 +757,7 @@ void Streamer::processCheckpoints(Player &player, const std::vector<SharedCell> 
 			{
 				if (d->first == player.visibleCheckpoint)
 				{
-					sampgdk::DisablePlayerCheckpoint(player.playerId);
+					StreamerApi::DisablePlayerCheckpoint(player.playerId);
 					if (d->second->streamCallbacks)
 					{
 						streamOutCallbacks.push_back(std::make_tuple(STREAMER_TYPE_CP, d->second->checkpointId, player.playerId));
@@ -776,7 +776,7 @@ void Streamer::processCheckpoints(Player &player, const std::vector<SharedCell> 
 		{
 			if (player.visibleCheckpoint)
 			{
-				sampgdk::DisablePlayerCheckpoint(player.playerId);
+				StreamerApi::DisablePlayerCheckpoint(player.playerId);
 				if (d->second->streamCallbacks)
 				{
 					streamOutCallbacks.push_back(std::make_tuple(STREAMER_TYPE_CP, d->second->checkpointId, player.playerId));
@@ -831,7 +831,7 @@ void Streamer::processMapIcons(Player &player, const std::vector<SharedCell> &ce
 			{
 				if (i != player.internalMapIcons.end())
 				{
-					sampgdk::RemovePlayerMapIcon(player.playerId, i->second);
+					StreamerApi::RemovePlayerMapIcon(player.playerId, i->second);
 					if (m->second->streamCallbacks)
 					{
 						streamOutCallbacks.push_back(std::make_tuple(STREAMER_TYPE_MAP_ICON, m->first, player.playerId));
@@ -859,7 +859,7 @@ void Streamer::processMapIcons(Player &player, const std::vector<SharedCell> &ce
 					std::unordered_map<int, int>::iterator j = player.internalMapIcons.find(e->second->mapIconId);
 					if (j != player.internalMapIcons.end())
 					{
-						sampgdk::RemovePlayerMapIcon(player.playerId, j->second);
+						StreamerApi::RemovePlayerMapIcon(player.playerId, j->second);
 						if (e->second->streamCallbacks)
 						{
 							streamOutCallbacks.push_back(std::make_tuple(STREAMER_TYPE_MAP_ICON, e->second->mapIconId, player.playerId));
@@ -880,7 +880,7 @@ void Streamer::processMapIcons(Player &player, const std::vector<SharedCell> &ce
 			}
 		}
 		int internalId = player.mapIconIdentifier.get();
-		sampgdk::SetPlayerMapIcon(player.playerId, internalId, d->second->position[0], d->second->position[1], d->second->position[2], d->second->type, d->second->color, d->second->style);
+		StreamerApi::SetPlayerMapIcon(player.playerId, internalId, d->second->position[0], d->second->position[1], d->second->position[2], d->second->type, d->second->color, d->second->style);
 		if (d->second->streamCallbacks)
 		{
 			streamInCallbacks.push_back(std::make_tuple(STREAMER_TYPE_MAP_ICON, d->second->mapIconId, player.playerId));
@@ -939,7 +939,7 @@ void Streamer::processObjects(Player &player, const std::vector<SharedCell> &cel
 			{
 				if (i != player.internalObjects.end())
 				{
-					sampgdk::DestroyPlayerObject(player.playerId, i->second);
+					StreamerApi::DestroyPlayerObject(player.playerId, i->second);
 					if (o->second->streamCallbacks)
 					{
 						streamOutCallbacks.push_back(std::make_tuple(STREAMER_TYPE_OBJECT, o->first, player.playerId));
@@ -979,7 +979,7 @@ void Streamer::processObjects(Player &player, const std::vector<SharedCell> &cel
 					std::unordered_map<int, int>::iterator j = player.internalObjects.find(e->second->objectId);
 					if (j != player.internalObjects.end())
 					{
-						sampgdk::DestroyPlayerObject(player.playerId, j->second);
+						StreamerApi::DestroyPlayerObject(player.playerId, j->second);
 						if (e->second->streamCallbacks)
 						{
 							streamOutCallbacks.push_back(std::make_tuple(STREAMER_TYPE_OBJECT, e->second->objectId, player.playerId));
@@ -999,7 +999,7 @@ void Streamer::processObjects(Player &player, const std::vector<SharedCell> &cel
 			player.currentVisibleObjects = player.internalObjects.size();
 			break;
 		}
-		int internalId = sampgdk::CreatePlayerObject(player.playerId, d->second->modelId, d->second->position[0], d->second->position[1], d->second->position[2], d->second->rotation[0], d->second->rotation[1], d->second->rotation[2], d->second->drawDistance);
+		int internalId = StreamerApi::CreatePlayerObject(player.playerId, d->second->modelId, d->second->position[0], d->second->position[1], d->second->position[2], d->second->rotation[0], d->second->rotation[1], d->second->rotation[2], d->second->drawDistance);
 		if (internalId == INVALID_OBJECT_ID)
 		{
 			player.currentVisibleObjects = player.internalObjects.size();
@@ -1013,43 +1013,43 @@ void Streamer::processObjects(Player &player, const std::vector<SharedCell> &cel
 		{
 			if (internalBaseId != INVALID_STREAMER_ID)
 			{
-				static AMX_NATIVE native = sampgdk::FindNative("AttachPlayerObjectToObject");
+				static AMX_NATIVE native = StreamerApi::FindNative("AttachPlayerObjectToObject");
 				if (native != NULL)
 				{
-					sampgdk::InvokeNative(native, "dddffffffb", player.playerId, internalId, internalBaseId, d->second->attach->positionOffset[0], d->second->attach->positionOffset[1], d->second->attach->positionOffset[2], d->second->attach->rotation[0], d->second->attach->rotation[1], d->second->attach->rotation[2], d->second->attach->syncRotation);
+					StreamerApi::InvokeNative(native, "dddffffffb", player.playerId, internalId, internalBaseId, d->second->attach->positionOffset[0], d->second->attach->positionOffset[1], d->second->attach->positionOffset[2], d->second->attach->rotation[0], d->second->attach->rotation[1], d->second->attach->rotation[2], d->second->attach->syncRotation);
 				}
 			}
 			else if (d->second->attach->player != INVALID_PLAYER_ID)
 			{
-				static AMX_NATIVE native = sampgdk::FindNative("AttachPlayerObjectToPlayer");
+				static AMX_NATIVE native = StreamerApi::FindNative("AttachPlayerObjectToPlayer");
 				if (native != NULL)
 				{
-					sampgdk::InvokeNative(native, "dddffffffd", player.playerId, internalId, d->second->attach->player, d->second->attach->positionOffset[0], d->second->attach->positionOffset[1], d->second->attach->positionOffset[2], d->second->attach->rotation[0], d->second->attach->rotation[1], d->second->attach->rotation[2], 1);
+					StreamerApi::InvokeNative(native, "dddffffffd", player.playerId, internalId, d->second->attach->player, d->second->attach->positionOffset[0], d->second->attach->positionOffset[1], d->second->attach->positionOffset[2], d->second->attach->rotation[0], d->second->attach->rotation[1], d->second->attach->rotation[2], 1);
 				}
 			}
 			else if (d->second->attach->vehicle != INVALID_VEHICLE_ID)
 			{
-				sampgdk::AttachPlayerObjectToVehicle(player.playerId, internalId, d->second->attach->vehicle, d->second->attach->positionOffset[0], d->second->attach->positionOffset[1], d->second->attach->positionOffset[2], d->second->attach->rotation[0], d->second->attach->rotation[1], d->second->attach->rotation[2]);
+				StreamerApi::AttachPlayerObjectToVehicle(player.playerId, internalId, d->second->attach->vehicle, d->second->attach->positionOffset[0], d->second->attach->positionOffset[1], d->second->attach->positionOffset[2], d->second->attach->rotation[0], d->second->attach->rotation[1], d->second->attach->rotation[2]);
 			}
 		}
 		else if (d->second->move)
 		{
-			sampgdk::MovePlayerObject(player.playerId, internalId, std::get<0>(d->second->move->position)[0], std::get<0>(d->second->move->position)[1], std::get<0>(d->second->move->position)[2], d->second->move->speed, std::get<0>(d->second->move->rotation)[0], std::get<0>(d->second->move->rotation)[1], std::get<0>(d->second->move->rotation)[2]);
+			StreamerApi::MovePlayerObject(player.playerId, internalId, std::get<0>(d->second->move->position)[0], std::get<0>(d->second->move->position)[1], std::get<0>(d->second->move->position)[2], d->second->move->speed, std::get<0>(d->second->move->rotation)[0], std::get<0>(d->second->move->rotation)[1], std::get<0>(d->second->move->rotation)[2]);
 		}
 		for (std::unordered_map<int, Item::Object::Material>::iterator m = d->second->materials.begin(); m != d->second->materials.end(); ++m)
 		{
 			if (m->second.main)
 			{
-				sampgdk::SetPlayerObjectMaterial(player.playerId, internalId, m->first, m->second.main->modelId, m->second.main->txdFileName.c_str(), m->second.main->textureName.c_str(), m->second.main->materialColor);
+				StreamerApi::SetPlayerObjectMaterial(player.playerId, internalId, m->first, m->second.main->modelId, m->second.main->txdFileName.c_str(), m->second.main->textureName.c_str(), m->second.main->materialColor);
 			}
 			else if (m->second.text)
 			{
-				sampgdk::SetPlayerObjectMaterialText(player.playerId, internalId, m->second.text->materialText.c_str(), m->first, m->second.text->materialSize, m->second.text->fontFace.c_str(), m->second.text->fontSize, m->second.text->bold, m->second.text->fontColor, m->second.text->backColor, m->second.text->textAlignment);
+				StreamerApi::SetPlayerObjectMaterialText(player.playerId, internalId, m->second.text->materialText.c_str(), m->first, m->second.text->materialSize, m->second.text->fontFace.c_str(), m->second.text->fontSize, m->second.text->bold, m->second.text->fontColor, m->second.text->backColor, m->second.text->textAlignment);
 			}
 		}
 		if (d->second->noCameraCollision)
 		{
-			sampgdk::SetPlayerObjectNoCameraCol(player.playerId, internalId);
+			StreamerApi::SetPlayerObjectNoCameraCol(player.playerId, internalId);
 		}
 		player.internalObjects.insert(std::make_pair(d->second->objectId, internalId));
 		if (d->second->cell)
@@ -1097,7 +1097,7 @@ void Streamer::streamPickups()
 		std::unordered_map<std::pair<int, int>, Item::SharedPickup, pair_hash>::iterator d = core->getData()->discoveredPickups.find(i->first);
 		if (d == core->getData()->discoveredPickups.end())
 		{
-			sampgdk::DestroyPickup(i->second);
+			StreamerApi::DestroyPickup(i->second);
 			std::unordered_map<int, Item::SharedPickup>::iterator p = core->getData()->pickups.find(i->first.first);
 			if (p != core->getData()->pickups.end())
 			{
@@ -1126,7 +1126,7 @@ void Streamer::streamPickups()
 		{
 			break;
 		}
-		int internalId = sampgdk::CreatePickup(s->second.second->modelId, s->second.second->type, s->second.second->position[0], s->second.second->position[1], s->second.second->position[2], s->second.first);
+		int internalId = StreamerApi::CreatePickup(s->second.second->modelId, s->second.second->type, s->second.second->position[0], s->second.second->position[1], s->second.second->position[2], s->second.first);
 		if (internalId == INVALID_PICKUP_ID)
 		{
 			break;
@@ -1166,7 +1166,7 @@ void Streamer::processRaceCheckpoints(Player &player, const std::vector<SharedCe
 			{
 				if (r->first == player.visibleRaceCheckpoint)
 				{
-					sampgdk::DisablePlayerRaceCheckpoint(player.playerId);
+					StreamerApi::DisablePlayerRaceCheckpoint(player.playerId);
 					if (r->second->streamCallbacks)
 					{
 						streamOutCallbacks.push_back(std::make_tuple(STREAMER_TYPE_RACE_CP, r->second->raceCheckpointId, player.playerId));
@@ -1184,7 +1184,7 @@ void Streamer::processRaceCheckpoints(Player &player, const std::vector<SharedCe
 		{
 			if (player.visibleRaceCheckpoint)
 			{
-				sampgdk::DisablePlayerRaceCheckpoint(player.playerId);
+				StreamerApi::DisablePlayerRaceCheckpoint(player.playerId);
 				if (d->second->streamCallbacks)
 				{
 					streamOutCallbacks.push_back(std::make_tuple(STREAMER_TYPE_RACE_CP, d->second->raceCheckpointId, player.playerId));
@@ -1246,7 +1246,7 @@ void Streamer::processTextLabels(Player &player, const std::vector<SharedCell> &
 			{
 				if (i != player.internalTextLabels.end())
 				{
-					sampgdk::DeletePlayer3DTextLabel(player.playerId, i->second);
+					StreamerApi::DeletePlayer3DTextLabel(player.playerId, i->second);
 					if (t->second->streamCallbacks)
 					{
 						streamOutCallbacks.push_back(std::make_tuple(STREAMER_TYPE_3D_TEXT_LABEL, t->first, player.playerId));
@@ -1273,7 +1273,7 @@ void Streamer::processTextLabels(Player &player, const std::vector<SharedCell> &
 					std::unordered_map<int, int>::iterator j = player.internalTextLabels.find(e->second->textLabelId);
 					if (j != player.internalTextLabels.end())
 					{
-						sampgdk::DeletePlayer3DTextLabel(player.playerId, j->second);
+						StreamerApi::DeletePlayer3DTextLabel(player.playerId, j->second);
 						if (e->second->streamCallbacks)
 						{
 							streamOutCallbacks.push_back(std::make_tuple(STREAMER_TYPE_3D_TEXT_LABEL, e->second->textLabelId, player.playerId));
@@ -1293,7 +1293,7 @@ void Streamer::processTextLabels(Player &player, const std::vector<SharedCell> &
 			player.currentVisibleTextLabels = player.internalTextLabels.size();
 			break;
 		}
-		int internalId = sampgdk::CreatePlayer3DTextLabel(player.playerId, d->second->text.c_str(), d->second->color, d->second->position[0], d->second->position[1], d->second->position[2], d->second->drawDistance, d->second->attach ? d->second->attach->player : INVALID_PLAYER_ID, d->second->attach ? d->second->attach->vehicle : INVALID_VEHICLE_ID, d->second->testLOS);
+		int internalId = StreamerApi::CreatePlayer3DTextLabel(player.playerId, d->second->text.c_str(), d->second->color, d->second->position[0], d->second->position[1], d->second->position[2], d->second->drawDistance, d->second->attach ? d->second->attach->player : INVALID_PLAYER_ID, d->second->attach ? d->second->attach->vehicle : INVALID_VEHICLE_ID, d->second->testLOS);
 		if (internalId == INVALID_3DTEXT_ID)
 		{
 			player.currentVisibleTextLabels = player.internalTextLabels.size();
@@ -1389,16 +1389,16 @@ void Streamer::processAttachedAreas()
 					case STREAMER_OBJECT_TYPE_GLOBAL:
 					{
 						Eigen::Vector3f position = Eigen::Vector3f::Zero(), rotation = Eigen::Vector3f::Zero();
-						adjust = sampgdk::GetObjectPos(std::get<0>((*a)->attach->object), &position[0], &position[1], &position[2]);
-						sampgdk::GetObjectRot(std::get<0>((*a)->attach->object), &rotation[0], &rotation[1], &rotation[2]);
+						adjust = StreamerApi::GetObjectPos(std::get<0>((*a)->attach->object), &position[0], &position[1], &position[2]);
+						StreamerApi::GetObjectRot(std::get<0>((*a)->attach->object), &rotation[0], &rotation[1], &rotation[2]);
 						Utility::constructAttachedArea(*a, std::variant<float, Eigen::Vector3f, Eigen::Vector4f>(rotation), position);
 						break;
 					}
 					case STREAMER_OBJECT_TYPE_PLAYER:
 					{
 						Eigen::Vector3f position = Eigen::Vector3f::Zero(), rotation = Eigen::Vector3f::Zero();
-						adjust = sampgdk::GetPlayerObjectPos(std::get<2>((*a)->attach->object), std::get<0>((*a)->attach->object), &position[0], &position[1], &position[2]);
-						sampgdk::GetPlayerObjectRot(std::get<2>((*a)->attach->object), std::get<0>((*a)->attach->object), &rotation[0], &rotation[1], &rotation[2]);
+						adjust = StreamerApi::GetPlayerObjectPos(std::get<2>((*a)->attach->object), std::get<0>((*a)->attach->object), &position[0], &position[1], &position[2]);
+						StreamerApi::GetPlayerObjectRot(std::get<2>((*a)->attach->object), std::get<0>((*a)->attach->object), &rotation[0], &rotation[1], &rotation[2]);
 						Utility::constructAttachedArea(*a, std::variant<float, Eigen::Vector3f, Eigen::Vector4f>(rotation), position);
 						break;
 					}
@@ -1418,8 +1418,8 @@ void Streamer::processAttachedAreas()
 			{
 				float heading = 0.0f;
 				Eigen::Vector3f position = Eigen::Vector3f::Zero();
-				adjust = sampgdk::GetPlayerPos((*a)->attach->player, &position[0], &position[1], &position[2]);
-				sampgdk::GetPlayerFacingAngle((*a)->attach->player, &heading);
+				adjust = StreamerApi::GetPlayerPos((*a)->attach->player, &position[0], &position[1], &position[2]);
+				StreamerApi::GetPlayerFacingAngle((*a)->attach->player, &heading);
 				Utility::constructAttachedArea(*a, std::variant<float, Eigen::Vector3f, Eigen::Vector4f>(heading), position);
 			}
 			else if ((*a)->attach->vehicle != INVALID_VEHICLE_ID)
@@ -1427,9 +1427,9 @@ void Streamer::processAttachedAreas()
 				bool occupied = false;
 				for (std::unordered_map<int, Player>::iterator p = core->getData()->players.begin(); p != core->getData()->players.end(); ++p)
 				{
-					if (sampgdk::GetPlayerState(p->first) == PLAYER_STATE_DRIVER)
+					if (StreamerApi::GetPlayerState(p->first) == PLAYER_STATE_DRIVER)
 					{
-						if (sampgdk::GetPlayerVehicleID(p->first) == (*a)->attach->vehicle)
+						if (StreamerApi::GetPlayerVehicleID(p->first) == (*a)->attach->vehicle)
 						{
 							occupied = true;
 							break;
@@ -1437,17 +1437,17 @@ void Streamer::processAttachedAreas()
 					}
 				}
 				Eigen::Vector3f position = Eigen::Vector3f::Zero();
-				adjust = sampgdk::GetVehiclePos((*a)->attach->vehicle, &position[0], &position[1], &position[2]);
+				adjust = StreamerApi::GetVehiclePos((*a)->attach->vehicle, &position[0], &position[1], &position[2]);
 				if (!occupied)
 				{
 					float heading = 0.0f;
-					sampgdk::GetVehicleZAngle((*a)->attach->vehicle, &heading);
+					StreamerApi::GetVehicleZAngle((*a)->attach->vehicle, &heading);
 					Utility::constructAttachedArea(*a, std::variant<float, Eigen::Vector3f, Eigen::Vector4f>(heading), position);
 				}
 				else
 				{
 					Eigen::Vector4f quaternion = Eigen::Vector4f::Zero();
-					sampgdk::GetVehicleRotationQuat((*a)->attach->vehicle, &quaternion[0], &quaternion[1], &quaternion[2], &quaternion[3]);
+					StreamerApi::GetVehicleRotationQuat((*a)->attach->vehicle, &quaternion[0], &quaternion[1], &quaternion[2], &quaternion[3]);
 					Utility::constructAttachedArea(*a, std::variant<float, Eigen::Vector3f, Eigen::Vector4f>(quaternion), position);
 				}
 			}
@@ -1516,13 +1516,13 @@ void Streamer::processAttachedObjects()
 			}
 			else if ((*o)->attach->player != INVALID_PLAYER_ID)
 			{
-				adjust = sampgdk::GetPlayerPos((*o)->attach->player, &(*o)->attach->position[0], &(*o)->attach->position[1], &(*o)->attach->position[2]);
-				Utility::setFirstValueInContainer((*o)->attach->worlds, sampgdk::GetPlayerVirtualWorld((*o)->attach->player));
+				adjust = StreamerApi::GetPlayerPos((*o)->attach->player, &(*o)->attach->position[0], &(*o)->attach->position[1], &(*o)->attach->position[2]);
+				Utility::setFirstValueInContainer((*o)->attach->worlds, StreamerApi::GetPlayerVirtualWorld((*o)->attach->player));
 			}
 			else if ((*o)->attach->vehicle != INVALID_VEHICLE_ID)
 			{
-				adjust = sampgdk::GetVehiclePos((*o)->attach->vehicle, &(*o)->attach->position[0], &(*o)->attach->position[1], &(*o)->attach->position[2]);
-				Utility::setFirstValueInContainer((*o)->attach->worlds, sampgdk::GetVehicleVirtualWorld((*o)->attach->vehicle));
+				adjust = StreamerApi::GetVehiclePos((*o)->attach->vehicle, &(*o)->attach->position[0], &(*o)->attach->position[1], &(*o)->attach->position[2]);
+				Utility::setFirstValueInContainer((*o)->attach->worlds, StreamerApi::GetVehicleVirtualWorld((*o)->attach->vehicle));
 			}
 			if (adjust)
 			{
@@ -1549,13 +1549,13 @@ void Streamer::processAttachedTextLabels()
 		{
 			if ((*t)->attach->player != INVALID_PLAYER_ID)
 			{
-				adjust = sampgdk::GetPlayerPos((*t)->attach->player, &(*t)->attach->position[0], &(*t)->attach->position[1], &(*t)->attach->position[2]);
-				Utility::setFirstValueInContainer((*t)->attach->worlds, sampgdk::GetPlayerVirtualWorld((*t)->attach->player));
+				adjust = StreamerApi::GetPlayerPos((*t)->attach->player, &(*t)->attach->position[0], &(*t)->attach->position[1], &(*t)->attach->position[2]);
+				Utility::setFirstValueInContainer((*t)->attach->worlds, StreamerApi::GetPlayerVirtualWorld((*t)->attach->player));
 			}
 			else if ((*t)->attach->vehicle != INVALID_VEHICLE_ID)
 			{
-				adjust = sampgdk::GetVehiclePos((*t)->attach->vehicle, &(*t)->attach->position[0], &(*t)->attach->position[1], &(*t)->attach->position[2]);
-				Utility::setFirstValueInContainer((*t)->attach->worlds, sampgdk::GetVehicleVirtualWorld((*t)->attach->vehicle));
+				adjust = StreamerApi::GetVehiclePos((*t)->attach->vehicle, &(*t)->attach->position[0], &(*t)->attach->position[1], &(*t)->attach->position[2]);
+				Utility::setFirstValueInContainer((*t)->attach->worlds, StreamerApi::GetVehicleVirtualWorld((*t)->attach->vehicle));
 			}
 			if (adjust)
 			{

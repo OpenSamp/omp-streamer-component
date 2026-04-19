@@ -1,8 +1,9 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.19)
 project(streamer)
 
 set(PLUGIN_VERSION "2.9.6")
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if (MSVC)
     add_definitions("/MP")
@@ -12,10 +13,9 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/lib/cmake-modules")
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/lib/eigen/cmake")
 
-set(SAMP_SDK_ROOT "${PROJECT_SOURCE_DIR}/lib/samp-plugin-sdk")
-find_package(SAMPSDK REQUIRED)
-include_directories(${SAMPSDK_DIR})
-include_directories(${SAMPSDK_DIR}/amx)
+add_subdirectory(lib/open.mp-sdk)
+
+include_directories(${PROJECT_SOURCE_DIR}/lib/pawn)
 
 include_directories(${PROJECT_SOURCE_DIR}/lib/boost)
 

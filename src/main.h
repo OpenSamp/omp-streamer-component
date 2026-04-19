@@ -31,6 +31,8 @@
 #include <algorithm>
 #include <bitset>
 #include <cmath>
+#include <cstdarg>
+#include <cstdio>
 #include <functional>
 #include <limits>
 #include <map>
@@ -48,6 +50,6 @@
 #include <tuple>
 
 #include "common.h"
-#include "sampgdk.h"
+#include "streamer_api.h"
 
 #endif

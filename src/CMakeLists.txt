@@ -1,7 +1,7 @@
 include(AMXConfig)
 include(AddSAMPPlugin)
 
-set(PLUGIN_SOURCES ${SAMPSDK_DIR}/amxplugin.cpp)
+set(PLUGIN_SOURCES ${PROJECT_SOURCE_DIR}/lib/pawn/amxplugin.cpp)
 
 add_subdirectory(manipulation)
 add_subdirectory(natives)
@@ -11,27 +11,20 @@ list(APPEND PLUGIN_SOURCES
 	callbacks.cpp
 	cell.cpp
 	chunk-streamer.cpp
-	component_bridge.cpp
 	core.cpp
 	data.cpp
 	grid.cpp
 	identifier.cpp
 	item.cpp
-	main.cpp
 	openmp_component.cpp
 	player.cpp
-	sampgdk.c
+	streamer_api.cpp
 	streamer.cpp
 )
 
-if(WIN32)
-	list(APPEND PLUGIN_SOURCES
-		${PROJECT_SOURCE_DIR}/streamer.def
-		${PROJECT_SOURCE_DIR}/streamer.rc
-	)
-endif()
-
 add_samp_plugin(${PROJECT_NAME} ${PLUGIN_SOURCES})
+
+target_link_libraries(${PROJECT_NAME} OMP-SDK)
 
 if(WIN32)
 	add_definitions(-DNOMINMAX)
@@ -40,9 +33,10 @@ else()
 	set_property(TARGET ${PROJECT_NAME} APPEND_STRING PROPERTY LINK_FLAGS " -lrt")
 endif()
 
-add_definitions(-DSAMPGDK_AMALGAMATION -DSAMPGDK_CPP_WRAPPERS -D_SILENCE_CXX17_NEGATORS_DEPRECATION_WARNING -D_SILENCE_CXX17_ADAPTOR_TYPEDEFS_DEPRECATION_WARNING)
+add_definitions(-D_SILENCE_CXX17_NEGATORS_DEPRECATION_WARNING -D_SILENCE_CXX17_ADAPTOR_TYPEDEFS_DEPRECATION_WARNING)
 
-set_target_properties(${PROJECT_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-target_link_libraries(${PROJECT_NAME})
+set_target_properties(${PROJECT_NAME} PROPERTIES
+	LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)

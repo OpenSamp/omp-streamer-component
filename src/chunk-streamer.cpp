@@ -173,7 +173,7 @@ void ChunkStreamer::streamMapIcons(Player &player, bool automatic)
 				std::unordered_map<int, int>::iterator i = player.internalMapIcons.find(*r);
 				if (i != player.internalMapIcons.end())
 				{
-					sampgdk::RemovePlayerMapIcon(player.playerId, i->second);
+					StreamerApi::RemovePlayerMapIcon(player.playerId, i->second);
 					std::unordered_map<int, Item::SharedMapIcon>::iterator m = core->getData()->mapIcons.find(*r);
 					if (m != core->getData()->mapIcons.end())
 					{
@@ -213,7 +213,7 @@ void ChunkStreamer::streamMapIcons(Player &player, bool automatic)
 							std::unordered_map<int, int>::iterator j = player.internalMapIcons.find(std::get<0>(e->second));
 							if (j != player.internalMapIcons.end())
 							{
-								sampgdk::RemovePlayerMapIcon(player.playerId, j->second);
+								StreamerApi::RemovePlayerMapIcon(player.playerId, j->second);
 								if (std::get<1>(e->second)->streamCallbacks)
 								{
 									streamOutCallbacks.push_back(std::make_tuple(STREAMER_TYPE_MAP_ICON, std::get<0>(e->second), player.playerId));
@@ -236,7 +236,7 @@ void ChunkStreamer::streamMapIcons(Player &player, bool automatic)
 					}
 				}
 				int internalId = player.mapIconIdentifier.get();
-				sampgdk::SetPlayerMapIcon(player.playerId, internalId, std::get<1>(d->second)->position[0], std::get<1>(d->second)->position[1], std::get<1>(d->second)->position[2], std::get<1>(d->second)->type, std::get<1>(d->second)->color, std::get<1>(d->second)->style);
+				StreamerApi::SetPlayerMapIcon(player.playerId, internalId, std::get<1>(d->second)->position[0], std::get<1>(d->second)->position[1], std::get<1>(d->second)->position[2], std::get<1>(d->second)->type, std::get<1>(d->second)->color, std::get<1>(d->second)->style);
 				if (std::get<1>(d->second)->streamCallbacks)
 				{
 					streamInCallbacks.push_back(std::make_tuple(STREAMER_TYPE_MAP_ICON, std::get<1>(d->second)->mapIconId, player.playerId));
@@ -331,7 +331,7 @@ void ChunkStreamer::streamObjects(Player &player, bool automatic)
 				std::unordered_map<int, int>::iterator i = player.internalObjects.find(*r);
 				if (i != player.internalObjects.end())
 				{
-					sampgdk::DestroyPlayerObject(player.playerId, i->second);
+					StreamerApi::DestroyPlayerObject(player.playerId, i->second);
 					std::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(*r);
 					if (o != core->getData()->objects.end())
 					{
@@ -385,7 +385,7 @@ void ChunkStreamer::streamObjects(Player &player, bool automatic)
 							std::unordered_map<int, int>::iterator j = player.internalObjects.find(std::get<0>(e->second));
 							if (j != player.internalObjects.end())
 							{
-								sampgdk::DestroyPlayerObject(player.playerId, j->second);
+								StreamerApi::DestroyPlayerObject(player.playerId, j->second);
 								if (std::get<1>(e->second)->streamCallbacks)
 								{
 									streamOutCallbacks.push_back(std::make_tuple(STREAMER_TYPE_OBJECT, std::get<0>(e->second), player.playerId));
@@ -406,7 +406,7 @@ void ChunkStreamer::streamObjects(Player &player, bool automatic)
 					streamingCanceled = true;
 					break;
 				}
-				int internalId = sampgdk::CreatePlayerObject(player.playerId, std::get<1>(d->second)->modelId, std::get<1>(d->second)->position[0], std::get<1>(d->second)->position[1], std::get<1>(d->second)->position[2], std::get<1>(d->second)->rotation[0], std::get<1>(d->second)->rotation[1], std::get<1>(d->second)->rotation[2], std::get<1>(d->second)->drawDistance);
+				int internalId = StreamerApi::CreatePlayerObject(player.playerId, std::get<1>(d->second)->modelId, std::get<1>(d->second)->position[0], std::get<1>(d->second)->position[1], std::get<1>(d->second)->position[2], std::get<1>(d->second)->rotation[0], std::get<1>(d->second)->rotation[1], std::get<1>(d->second)->rotation[2], std::get<1>(d->second)->drawDistance);
 				if (internalId == INVALID_OBJECT_ID)
 				{
 					streamingCanceled = true;
@@ -420,43 +420,43 @@ void ChunkStreamer::streamObjects(Player &player, bool automatic)
 				{
 					if (internalBaseId != INVALID_STREAMER_ID)
 					{
-						static AMX_NATIVE native = sampgdk::FindNative("AttachPlayerObjectToObject");
+						static AMX_NATIVE native = StreamerApi::FindNative("AttachPlayerObjectToObject");
 						if (native != NULL)
 						{
-							sampgdk::InvokeNative(native, "dddffffffb", player.playerId, internalId, internalBaseId, std::get<1>(d->second)->attach->positionOffset[0], std::get<1>(d->second)->attach->positionOffset[1], std::get<1>(d->second)->attach->positionOffset[2], std::get<1>(d->second)->attach->rotation[0], std::get<1>(d->second)->attach->rotation[1], std::get<1>(d->second)->attach->rotation[2], std::get<1>(d->second)->attach->syncRotation);
+							StreamerApi::InvokeNative(native, "dddffffffb", player.playerId, internalId, internalBaseId, std::get<1>(d->second)->attach->positionOffset[0], std::get<1>(d->second)->attach->positionOffset[1], std::get<1>(d->second)->attach->positionOffset[2], std::get<1>(d->second)->attach->rotation[0], std::get<1>(d->second)->attach->rotation[1], std::get<1>(d->second)->attach->rotation[2], std::get<1>(d->second)->attach->syncRotation);
 						}
 					}
 					else if (std::get<1>(d->second)->attach->player != INVALID_PLAYER_ID)
 					{
-						static AMX_NATIVE native = sampgdk::FindNative("AttachPlayerObjectToPlayer");
+						static AMX_NATIVE native = StreamerApi::FindNative("AttachPlayerObjectToPlayer");
 						if (native != NULL)
 						{
-							sampgdk::InvokeNative(native, "dddffffffd", player.playerId, internalId, std::get<1>(d->second)->attach->player, std::get<1>(d->second)->attach->positionOffset[0], std::get<1>(d->second)->attach->positionOffset[1], std::get<1>(d->second)->attach->positionOffset[2], std::get<1>(d->second)->attach->rotation[0], std::get<1>(d->second)->attach->rotation[1], std::get<1>(d->second)->attach->rotation[2], 1);
+							StreamerApi::InvokeNative(native, "dddffffffd", player.playerId, internalId, std::get<1>(d->second)->attach->player, std::get<1>(d->second)->attach->positionOffset[0], std::get<1>(d->second)->attach->positionOffset[1], std::get<1>(d->second)->attach->positionOffset[2], std::get<1>(d->second)->attach->rotation[0], std::get<1>(d->second)->attach->rotation[1], std::get<1>(d->second)->attach->rotation[2], 1);
 						}
 					}
 					else if (std::get<1>(d->second)->attach->vehicle != INVALID_VEHICLE_ID)
 					{
-						sampgdk::AttachPlayerObjectToVehicle(player.playerId, internalId, std::get<1>(d->second)->attach->vehicle, std::get<1>(d->second)->attach->positionOffset[0], std::get<1>(d->second)->attach->positionOffset[1], std::get<1>(d->second)->attach->positionOffset[2], std::get<1>(d->second)->attach->rotation[0], std::get<1>(d->second)->attach->rotation[1], std::get<1>(d->second)->attach->rotation[2]);
+						StreamerApi::AttachPlayerObjectToVehicle(player.playerId, internalId, std::get<1>(d->second)->attach->vehicle, std::get<1>(d->second)->attach->positionOffset[0], std::get<1>(d->second)->attach->positionOffset[1], std::get<1>(d->second)->attach->positionOffset[2], std::get<1>(d->second)->attach->rotation[0], std::get<1>(d->second)->attach->rotation[1], std::get<1>(d->second)->attach->rotation[2]);
 					}
 				}
 				else if (std::get<1>(d->second)->move)
 				{
-					sampgdk::MovePlayerObject(player.playerId, internalId, std::get<0>(std::get<1>(d->second)->move->position)[0], std::get<0>(std::get<1>(d->second)->move->position)[1], std::get<0>(std::get<1>(d->second)->move->position)[2], std::get<1>(d->second)->move->speed, std::get<0>(std::get<1>(d->second)->move->rotation)[0], std::get<0>(std::get<1>(d->second)->move->rotation)[1], std::get<0>(std::get<1>(d->second)->move->rotation)[2]);
+					StreamerApi::MovePlayerObject(player.playerId, internalId, std::get<0>(std::get<1>(d->second)->move->position)[0], std::get<0>(std::get<1>(d->second)->move->position)[1], std::get<0>(std::get<1>(d->second)->move->position)[2], std::get<1>(d->second)->move->speed, std::get<0>(std::get<1>(d->second)->move->rotation)[0], std::get<0>(std::get<1>(d->second)->move->rotation)[1], std::get<0>(std::get<1>(d->second)->move->rotation)[2]);
 				}
 				for (std::unordered_map<int, Item::Object::Material>::iterator m = std::get<1>(d->second)->materials.begin(); m != std::get<1>(d->second)->materials.end(); ++m)
 				{
 					if (m->second.main)
 					{
-						sampgdk::SetPlayerObjectMaterial(player.playerId, internalId, m->first, m->second.main->modelId, m->second.main->txdFileName.c_str(), m->second.main->textureName.c_str(), m->second.main->materialColor);
+						StreamerApi::SetPlayerObjectMaterial(player.playerId, internalId, m->first, m->second.main->modelId, m->second.main->txdFileName.c_str(), m->second.main->textureName.c_str(), m->second.main->materialColor);
 					}
 					else if (m->second.text)
 					{
-						sampgdk::SetPlayerObjectMaterialText(player.playerId, internalId, m->second.text->materialText.c_str(), m->first, m->second.text->materialSize, m->second.text->fontFace.c_str(), m->second.text->fontSize, m->second.text->bold, m->second.text->fontColor, m->second.text->backColor, m->second.text->textAlignment);
+						StreamerApi::SetPlayerObjectMaterialText(player.playerId, internalId, m->second.text->materialText.c_str(), m->first, m->second.text->materialSize, m->second.text->fontFace.c_str(), m->second.text->fontSize, m->second.text->bold, m->second.text->fontColor, m->second.text->backColor, m->second.text->textAlignment);
 					}
 				}
 				if (std::get<1>(d->second)->noCameraCollision)
 				{
-					sampgdk::SetPlayerObjectNoCameraCol(player.playerId, internalId);
+					StreamerApi::SetPlayerObjectNoCameraCol(player.playerId, internalId);
 				}
 				player.internalObjects.insert(std::make_pair(std::get<0>(d->second), internalId));
 				if (std::get<1>(d->second)->cell)
@@ -553,7 +553,7 @@ void ChunkStreamer::streamTextLabels(Player &player, bool automatic)
 				std::unordered_map<int, int>::iterator i = player.internalTextLabels.find(*r);
 				if (i != player.internalTextLabels.end())
 				{
-					sampgdk::DeletePlayer3DTextLabel(player.playerId, i->second);
+					StreamerApi::DeletePlayer3DTextLabel(player.playerId, i->second);
 					std::unordered_map<int, Item::SharedTextLabel>::iterator t = core->getData()->textLabels.find(*r);
 					if (t != core->getData()->textLabels.end())
 					{
@@ -593,7 +593,7 @@ void ChunkStreamer::streamTextLabels(Player &player, bool automatic)
 							std::unordered_map<int, int>::iterator j = player.internalTextLabels.find(std::get<0>(e->second));
 							if (j != player.internalTextLabels.end())
 							{
-								sampgdk::DeletePlayer3DTextLabel(player.playerId, j->second);
+								StreamerApi::DeletePlayer3DTextLabel(player.playerId, j->second);
 								if (std::get<1>(e->second)->streamCallbacks)
 								{
 									streamOutCallbacks.push_back(std::make_tuple(STREAMER_TYPE_3D_TEXT_LABEL, std::get<0>(e->second), player.playerId));
@@ -614,7 +614,7 @@ void ChunkStreamer::streamTextLabels(Player &player, bool automatic)
 					streamingCanceled = true;
 					break;
 				}
-				int internalId = sampgdk::CreatePlayer3DTextLabel(player.playerId, std::get<1>(d->second)->text.c_str(), std::get<1>(d->second)->color, std::get<1>(d->second)->position[0], std::get<1>(d->second)->position[1], std::get<1>(d->second)->position[2], std::get<1>(d->second)->drawDistance, std::get<1>(d->second)->attach ? std::get<1>(d->second)->attach->player : INVALID_PLAYER_ID, std::get<1>(d->second)->attach ? std::get<1>(d->second)->attach->vehicle : INVALID_VEHICLE_ID, std::get<1>(d->second)->testLOS);
+				int internalId = StreamerApi::CreatePlayer3DTextLabel(player.playerId, std::get<1>(d->second)->text.c_str(), std::get<1>(d->second)->color, std::get<1>(d->second)->position[0], std::get<1>(d->second)->position[1], std::get<1>(d->second)->position[2], std::get<1>(d->second)->drawDistance, std::get<1>(d->second)->attach ? std::get<1>(d->second)->attach->player : INVALID_PLAYER_ID, std::get<1>(d->second)->attach ? std::get<1>(d->second)->attach->vehicle : INVALID_VEHICLE_ID, std::get<1>(d->second)->testLOS);
 				if (internalId == INVALID_3DTEXT_ID)
 				{
 					streamingCanceled = true;

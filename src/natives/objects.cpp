@@ -106,7 +106,7 @@ cell AMX_NATIVE_CALL Natives::SetDynamicObjectPos(AMX *amx, cell *params)
 			std::unordered_map<int, int>::iterator i = p->second.internalObjects.find(o->first);
 			if (i != p->second.internalObjects.end())
 			{
-				sampgdk::SetPlayerObjectPos(p->first, i->second, o->second->position[0], o->second->position[1], o->second->position[2]);
+				StreamerApi::SetPlayerObjectPos(p->first, i->second, o->second->position[0], o->second->position[1], o->second->position[2]);
 			}
 		}
 		if (position[0] != o->second->position[0] || position[1] != o->second->position[1])
@@ -163,7 +163,7 @@ cell AMX_NATIVE_CALL Natives::SetDynamicObjectRot(AMX *amx, cell *params)
 			std::unordered_map<int, int>::iterator i = p->second.internalObjects.find(o->first);
 			if (i != p->second.internalObjects.end())
 			{
-				sampgdk::SetPlayerObjectRot(p->first, i->second, o->second->rotation[0], o->second->rotation[1], o->second->rotation[2]);
+				StreamerApi::SetPlayerObjectRot(p->first, i->second, o->second->rotation[0], o->second->rotation[1], o->second->rotation[2]);
 			}
 		}
 		if (o->second->move)
@@ -202,7 +202,7 @@ cell AMX_NATIVE_CALL Natives::SetDynamicObjectNoCameraCol(AMX *amx, cell *params
 			std::unordered_map<int, int>::iterator i = p->second.internalObjects.find(o->first);
 			if (i != p->second.internalObjects.end())
 			{
-				sampgdk::SetPlayerObjectNoCameraCol(p->first, i->second);
+				StreamerApi::SetPlayerObjectNoCameraCol(p->first, i->second);
 			}
 		}
 		return 1;
@@ -245,8 +245,8 @@ cell AMX_NATIVE_CALL Natives::MoveDynamicObject(AMX *amx, cell *params)
 			std::unordered_map<int, int>::iterator i = p->second.internalObjects.find(o->first);
 			if (i != p->second.internalObjects.end())
 			{
-				sampgdk::StopPlayerObject(p->first, i->second);
-				sampgdk::MovePlayerObject(p->first, i->second, std::get<0>(o->second->move->position)[0], std::get<0>(o->second->move->position)[1], std::get<0>(o->second->move->position)[2], o->second->move->speed, std::get<0>(o->second->move->rotation)[0], std::get<0>(o->second->move->rotation)[1], std::get<0>(o->second->move->rotation)[2]);
+				StreamerApi::StopPlayerObject(p->first, i->second);
+				StreamerApi::MovePlayerObject(p->first, i->second, std::get<0>(o->second->move->position)[0], std::get<0>(o->second->move->position)[1], std::get<0>(o->second->move->position)[2], o->second->move->speed, std::get<0>(o->second->move->rotation)[0], std::get<0>(o->second->move->rotation)[1], std::get<0>(o->second->move->rotation)[2]);
 			}
 		}
 		core->getStreamer()->movingObjects.insert(o->second);
@@ -268,7 +268,7 @@ cell AMX_NATIVE_CALL Natives::StopDynamicObject(AMX *amx, cell *params)
 				std::unordered_map<int, int>::iterator i = p->second.internalObjects.find(o->first);
 				if (i != p->second.internalObjects.end())
 				{
-					sampgdk::StopPlayerObject(p->first, i->second);
+					StreamerApi::StopPlayerObject(p->first, i->second);
 				}
 			}
 			o->second->move.reset();
@@ -321,7 +321,7 @@ cell AMX_NATIVE_CALL Natives::AttachCameraToDynamicObject(AMX *amx, cell *params
 		}
 		if (internalId != INVALID_OBJECT_ID)
 		{
-			sampgdk::AttachCameraToPlayerObject(p->first, internalId);
+			StreamerApi::AttachCameraToPlayerObject(p->first, internalId);
 			return 1;
 		}
 	}
@@ -331,7 +331,7 @@ cell AMX_NATIVE_CALL Natives::AttachCameraToDynamicObject(AMX *amx, cell *params
 cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToObject(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(9);
-	static AMX_NATIVE native = sampgdk::FindNative("AttachPlayerObjectToObject");
+	static AMX_NATIVE native = StreamerApi::FindNative("AttachPlayerObjectToObject");
 	if (native == NULL)
 	{
 		Utility::logError("AttachDynamicObjectToObject: use open.mp or YSF plugin to attach objects to objects.");
@@ -362,17 +362,17 @@ cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToObject(AMX *amx, cell *params
 				{
 					if (native != NULL)
 					{
-						sampgdk::InvokeNative(native, "dddffffffb", p->first, i->second, j->second, o->second->attach->positionOffset[0], o->second->attach->positionOffset[1], o->second->attach->positionOffset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2], o->second->attach->syncRotation);
+						StreamerApi::InvokeNative(native, "dddffffffb", p->first, i->second, j->second, o->second->attach->positionOffset[0], o->second->attach->positionOffset[1], o->second->attach->positionOffset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2], o->second->attach->syncRotation);
 					}
 					for (std::unordered_map<int, Item::Object::Material>::iterator m = o->second->materials.begin(); m != o->second->materials.end(); ++m)
 					{
 						if (m->second.main)
 						{
-							sampgdk::SetPlayerObjectMaterial(p->first, i->second, m->first, m->second.main->modelId, m->second.main->txdFileName.c_str(), m->second.main->textureName.c_str(), m->second.main->materialColor);
+							StreamerApi::SetPlayerObjectMaterial(p->first, i->second, m->first, m->second.main->modelId, m->second.main->txdFileName.c_str(), m->second.main->textureName.c_str(), m->second.main->materialColor);
 						}
 						else if (m->second.text)
 						{
-							sampgdk::SetPlayerObjectMaterialText(p->first, i->second, m->second.text->materialText.c_str(), m->first, m->second.text->materialSize, m->second.text->fontFace.c_str(), m->second.text->fontSize, m->second.text->bold, m->second.text->fontColor, m->second.text->backColor, m->second.text->textAlignment);
+							StreamerApi::SetPlayerObjectMaterialText(p->first, i->second, m->second.text->materialText.c_str(), m->first, m->second.text->materialSize, m->second.text->fontFace.c_str(), m->second.text->fontSize, m->second.text->bold, m->second.text->fontColor, m->second.text->backColor, m->second.text->textAlignment);
 						}
 					}
 				}
@@ -409,7 +409,7 @@ cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToObject(AMX *amx, cell *params
 cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToPlayer(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(8);
-	static AMX_NATIVE native = sampgdk::FindNative("AttachPlayerObjectToPlayer");
+	static AMX_NATIVE native = StreamerApi::FindNative("AttachPlayerObjectToPlayer");
 	if (native == NULL)
 	{
 		Utility::logError("AttachDynamicObjectToPlayer: use open.mp or YSF plugin to attach objects to players.");
@@ -436,17 +436,17 @@ cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToPlayer(AMX *amx, cell *params
 			{
 				if (native != NULL)
 				{
-					sampgdk::InvokeNative(native, "dddffffffd", p->first, i->second, o->second->attach->player, o->second->attach->positionOffset[0], o->second->attach->positionOffset[1], o->second->attach->positionOffset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2], 0);
+					StreamerApi::InvokeNative(native, "dddffffffd", p->first, i->second, o->second->attach->player, o->second->attach->positionOffset[0], o->second->attach->positionOffset[1], o->second->attach->positionOffset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2], 0);
 				}
 				for (std::unordered_map<int, Item::Object::Material>::iterator m = o->second->materials.begin(); m != o->second->materials.end(); ++m)
 				{
 					if (m->second.main)
 					{
-						sampgdk::SetPlayerObjectMaterial(p->first, i->second, m->first, m->second.main->modelId, m->second.main->txdFileName.c_str(), m->second.main->textureName.c_str(), m->second.main->materialColor);
+						StreamerApi::SetPlayerObjectMaterial(p->first, i->second, m->first, m->second.main->modelId, m->second.main->txdFileName.c_str(), m->second.main->textureName.c_str(), m->second.main->materialColor);
 					}
 					else if (m->second.text)
 					{
-						sampgdk::SetPlayerObjectMaterialText(p->first, i->second, m->second.text->materialText.c_str(), m->first, m->second.text->materialSize, m->second.text->fontFace.c_str(), m->second.text->fontSize, m->second.text->bold, m->second.text->fontColor, m->second.text->backColor, m->second.text->textAlignment);
+						StreamerApi::SetPlayerObjectMaterialText(p->first, i->second, m->second.text->materialText.c_str(), m->first, m->second.text->materialSize, m->second.text->fontFace.c_str(), m->second.text->fontSize, m->second.text->bold, m->second.text->fontColor, m->second.text->backColor, m->second.text->textAlignment);
 					}
 				}
 			}
@@ -488,16 +488,16 @@ cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToVehicle(AMX *amx, cell *param
 			std::unordered_map<int, int>::iterator i = p->second.internalObjects.find(o->first);
 			if (i != p->second.internalObjects.end())
 			{
-				sampgdk::AttachPlayerObjectToVehicle(p->first, i->second, o->second->attach->vehicle, o->second->attach->positionOffset[0], o->second->attach->positionOffset[1], o->second->attach->positionOffset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2]);
+				StreamerApi::AttachPlayerObjectToVehicle(p->first, i->second, o->second->attach->vehicle, o->second->attach->positionOffset[0], o->second->attach->positionOffset[1], o->second->attach->positionOffset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2]);
 				for (std::unordered_map<int, Item::Object::Material>::iterator m = o->second->materials.begin(); m != o->second->materials.end(); ++m)
 				{
 					if (m->second.main)
 					{
-						sampgdk::SetPlayerObjectMaterial(p->first, i->second, m->first, m->second.main->modelId, m->second.main->txdFileName.c_str(), m->second.main->textureName.c_str(), m->second.main->materialColor);
+						StreamerApi::SetPlayerObjectMaterial(p->first, i->second, m->first, m->second.main->modelId, m->second.main->txdFileName.c_str(), m->second.main->textureName.c_str(), m->second.main->materialColor);
 					}
 					else if (m->second.text)
 					{
-						sampgdk::SetPlayerObjectMaterialText(p->first, i->second, m->second.text->materialText.c_str(), m->first, m->second.text->materialSize, m->second.text->fontFace.c_str(), m->second.text->fontSize, m->second.text->bold, m->second.text->fontColor, m->second.text->backColor, m->second.text->textAlignment);
+						StreamerApi::SetPlayerObjectMaterialText(p->first, i->second, m->second.text->materialText.c_str(), m->first, m->second.text->materialSize, m->second.text->fontFace.c_str(), m->second.text->fontSize, m->second.text->bold, m->second.text->fontColor, m->second.text->backColor, m->second.text->textAlignment);
 					}
 				}
 			}
@@ -550,7 +550,7 @@ cell AMX_NATIVE_CALL Natives::EditDynamicObject(AMX *amx, cell *params)
 		}
 		if (internalId != INVALID_OBJECT_ID)
 		{
-			sampgdk::EditPlayerObject(p->first, internalId);
+			StreamerApi::EditPlayerObject(p->first, internalId);
 			return 1;
 		}
 	}
@@ -592,7 +592,7 @@ cell AMX_NATIVE_CALL Natives::RemoveDynamicObjectMaterial(AMX *amx, cell *params
 				std::unordered_map<int, int>::iterator i = p->second.internalObjects.find(o->first);
 				if (i != p->second.internalObjects.end())
 				{
-					sampgdk::DestroyPlayerObject(p->first, i->second);
+					StreamerApi::DestroyPlayerObject(p->first, i->second);
 					p->second.internalObjects.erase(i);
 					core->getStreamer()->startManualUpdate(p->second, STREAMER_TYPE_OBJECT);
 				}
@@ -642,7 +642,7 @@ cell AMX_NATIVE_CALL Natives::SetDynamicObjectMaterial(AMX *amx, cell *params)
 			std::unordered_map<int, int>::iterator i = p->second.internalObjects.find(o->first);
 			if (i != p->second.internalObjects.end())
 			{
-				sampgdk::SetPlayerObjectMaterial(p->first, i->second, index, o->second->materials[index].main->modelId, o->second->materials[index].main->txdFileName.c_str(), o->second->materials[index].main->textureName.c_str(), o->second->materials[index].main->materialColor);
+				StreamerApi::SetPlayerObjectMaterial(p->first, i->second, index, o->second->materials[index].main->modelId, o->second->materials[index].main->txdFileName.c_str(), o->second->materials[index].main->textureName.c_str(), o->second->materials[index].main->materialColor);
 			}
 		}
 		o->second->materials[index].text.reset();
@@ -686,7 +686,7 @@ cell AMX_NATIVE_CALL Natives::RemoveDynamicObjectMaterialText(AMX *amx, cell *pa
 				std::unordered_map<int, int>::iterator i = p->second.internalObjects.find(o->first);
 				if (i != p->second.internalObjects.end())
 				{
-					sampgdk::DestroyPlayerObject(p->first, i->second);
+					StreamerApi::DestroyPlayerObject(p->first, i->second);
 					p->second.internalObjects.erase(i);
 					core->getStreamer()->startManualUpdate(p->second, STREAMER_TYPE_OBJECT);
 				}
@@ -744,7 +744,7 @@ cell AMX_NATIVE_CALL Natives::SetDynamicObjectMaterialText(AMX *amx, cell *param
 			std::unordered_map<int, int>::iterator i = p->second.internalObjects.find(o->first);
 			if (i != p->second.internalObjects.end())
 			{
-				sampgdk::SetPlayerObjectMaterialText(p->first, i->second, o->second->materials[index].text->materialText.c_str(), index, o->second->materials[index].text->materialSize, o->second->materials[index].text->fontFace.c_str(), o->second->materials[index].text->fontSize, o->second->materials[index].text->bold, o->second->materials[index].text->fontColor, o->second->materials[index].text->backColor, o->second->materials[index].text->textAlignment);
+				StreamerApi::SetPlayerObjectMaterialText(p->first, i->second, o->second->materials[index].text->materialText.c_str(), index, o->second->materials[index].text->materialSize, o->second->materials[index].text->fontFace.c_str(), o->second->materials[index].text->fontSize, o->second->materials[index].text->bold, o->second->materials[index].text->fontColor, o->second->materials[index].text->backColor, o->second->materials[index].text->textAlignment);
 			}
 		}
 		o->second->materials[index].main.reset();
@@ -759,7 +759,7 @@ cell AMX_NATIVE_CALL Natives::GetPlayerCameraTargetDynObject(AMX *amx, cell *par
 	std::unordered_map<int, Player>::iterator p = core->getData()->players.find(static_cast<int>(params[1]));
 	if (p != core->getData()->players.end())
 	{
-		int objectid = sampgdk::GetPlayerCameraTargetObject(p->second.playerId);
+		int objectid = StreamerApi::GetPlayerCameraTargetObject(p->second.playerId);
 		if (objectid != INVALID_OBJECT_ID)
 		{
 			for (std::unordered_map<int, int>::iterator i = p->second.internalObjects.begin(); i != p->second.internalObjects.end(); ++i)

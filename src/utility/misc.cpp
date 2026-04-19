@@ -61,7 +61,7 @@ std::unordered_map<int, Item::SharedCheckpoint>::iterator Utility::destroyCheckp
 	{
 		if (p->second.visibleCheckpoint == c->first)
 		{
-			sampgdk::DisablePlayerCheckpoint(p->first);
+			StreamerApi::DisablePlayerCheckpoint(p->first);
 			p->second.activeCheckpoint = 0;
 			p->second.visibleCheckpoint = 0;
 		}
@@ -89,7 +89,7 @@ std::unordered_map<int, Item::SharedMapIcon>::iterator Utility::destroyMapIcon(s
 		std::unordered_map<int, int>::iterator i = p->second.internalMapIcons.find(m->first);
 		if (i != p->second.internalMapIcons.end())
 		{
-			sampgdk::RemovePlayerMapIcon(p->first, i->second);
+			StreamerApi::RemovePlayerMapIcon(p->first, i->second);
 			p->second.mapIconIdentifier.remove(i->second, p->second.internalMapIcons.size());
 			p->second.internalMapIcons.erase(i);
 		}
@@ -122,7 +122,7 @@ std::unordered_map<int, Item::SharedObject>::iterator Utility::destroyObject(std
 		std::unordered_map<int, int>::iterator i = p->second.internalObjects.find(o->first);
 		if (i != p->second.internalObjects.end())
 		{
-			sampgdk::DestroyPlayerObject(p->first, i->second);
+			StreamerApi::DestroyPlayerObject(p->first, i->second);
 			p->second.internalObjects.erase(i);
 		}
 		std::unordered_set<int>::iterator r = p->second.removedObjects.find(o->first);
@@ -144,7 +144,7 @@ std::unordered_map<int, Item::SharedPickup>::iterator Utility::destroyPickup(std
 		std::unordered_map<std::pair<int, int>, int, pair_hash>::iterator i = core->getData()->internalPickups.find(std::make_pair(p->first, *w));
 		if (i != core->getData()->internalPickups.end())
 		{
-			sampgdk::DestroyPickup(i->second);
+			StreamerApi::DestroyPickup(i->second);
 			core->getData()->internalPickups.erase(i);
 		}
 		std::unordered_map<std::pair<int, int>, Item::SharedPickup, pair_hash>::iterator d = core->getData()->discoveredPickups.find(std::make_pair(p->first, *w));
@@ -164,7 +164,7 @@ std::unordered_map<int, Item::SharedRaceCheckpoint>::iterator Utility::destroyRa
 	{
 		if (p->second.visibleRaceCheckpoint == r->first)
 		{
-			sampgdk::DisablePlayerRaceCheckpoint(p->first);
+			StreamerApi::DisablePlayerRaceCheckpoint(p->first);
 			p->second.activeRaceCheckpoint = 0;
 			p->second.visibleRaceCheckpoint = 0;
 		}
@@ -192,7 +192,7 @@ std::unordered_map<int, Item::SharedTextLabel>::iterator Utility::destroyTextLab
 		std::unordered_map<int, int>::iterator i = p->second.internalTextLabels.find(t->first);
 		if (i != p->second.internalTextLabels.end())
 		{
-			sampgdk::DeletePlayer3DTextLabel(p->first, i->second);
+			StreamerApi::DeletePlayer3DTextLabel(p->first, i->second);
 			p->second.internalTextLabels.erase(i);
 		}
 		std::unordered_set<int>::iterator r = p->second.removedTextLabels.find(t->first);
@@ -406,9 +406,9 @@ void Utility::processPendingDestroyedActors()
 		std::vector<int>::iterator a = core->getData()->destroyedActors.begin();
 		while (a != core->getData()->destroyedActors.end())
 		{
-			if (sampgdk::IsValidActor(*a))
+			if (StreamerApi::IsValidActor(*a))
 			{
-				sampgdk::DestroyActor(*a);
+				StreamerApi::DestroyActor(*a);
 			}
 			a = core->getData()->destroyedActors.erase(a);
 		}

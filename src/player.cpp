@@ -35,7 +35,7 @@ Player::Player(int id)
 	delayedRaceCheckpoint = 0;
 	delayedUpdate = false;
 	delayedUpdateType = 0;
-	if (!sampgdk::IsPlayerNPC(id))
+	if (!StreamerApi::IsPlayerNPC(id))
 	{
 		enabledItems.set();
 	}

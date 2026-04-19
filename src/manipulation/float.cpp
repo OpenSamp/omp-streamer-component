@@ -996,8 +996,8 @@ int Manipulation::setFloatData(AMX *amx, cell *params)
 						std::unordered_map<int, int>::iterator i = p->second.internalObjects.find(o->first);
 						if (i != p->second.internalObjects.end())
 						{
-							sampgdk::DestroyPlayerObject(p->first, i->second);
-							i->second = sampgdk::CreatePlayerObject(p->first, o->second->modelId, o->second->position[0], o->second->position[1], o->second->position[2], o->second->rotation[0], o->second->rotation[1], o->second->rotation[2], o->second->drawDistance);
+							StreamerApi::DestroyPlayerObject(p->first, i->second);
+							i->second = StreamerApi::CreatePlayerObject(p->first, o->second->modelId, o->second->position[0], o->second->position[1], o->second->position[2], o->second->rotation[0], o->second->rotation[1], o->second->rotation[2], o->second->drawDistance);
 							if (o->second->attach)
 							{
 								if (o->second->attach->object != INVALID_STREAMER_ID)
@@ -1005,44 +1005,44 @@ int Manipulation::setFloatData(AMX *amx, cell *params)
 									std::unordered_map<int, int>::iterator j = p->second.internalObjects.find(o->second->attach->object);
 									if (j != p->second.internalObjects.end())
 									{
-										static AMX_NATIVE native = sampgdk::FindNative("AttachPlayerObjectToObject");
+										static AMX_NATIVE native = StreamerApi::FindNative("AttachPlayerObjectToObject");
 										if (native != NULL)
 										{
-											sampgdk::InvokeNative(native, "dddffffffb", p->first, i->second, j->second, o->second->attach->positionOffset[0], o->second->attach->positionOffset[1], o->second->attach->positionOffset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2], o->second->attach->syncRotation);
+											StreamerApi::InvokeNative(native, "dddffffffb", p->first, i->second, j->second, o->second->attach->positionOffset[0], o->second->attach->positionOffset[1], o->second->attach->positionOffset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2], o->second->attach->syncRotation);
 										}
 									}
 								}
 								else if (o->second->attach->player != INVALID_PLAYER_ID)
 								{
-									static AMX_NATIVE native = sampgdk::FindNative("AttachPlayerObjectToPlayer");
+									static AMX_NATIVE native = StreamerApi::FindNative("AttachPlayerObjectToPlayer");
 									if (native != NULL)
 									{
-										sampgdk::InvokeNative(native, "dddffffffd", p->first, i->second, o->second->attach->player, o->second->attach->positionOffset[0], o->second->attach->positionOffset[1], o->second->attach->positionOffset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2], 1);
+										StreamerApi::InvokeNative(native, "dddffffffd", p->first, i->second, o->second->attach->player, o->second->attach->positionOffset[0], o->second->attach->positionOffset[1], o->second->attach->positionOffset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2], 1);
 									}
 								}
 								else if (o->second->attach->vehicle != INVALID_VEHICLE_ID)
 								{
-									sampgdk::AttachPlayerObjectToVehicle(p->first, i->second, o->second->attach->vehicle, o->second->attach->positionOffset[0], o->second->attach->positionOffset[1], o->second->attach->positionOffset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2]);
+									StreamerApi::AttachPlayerObjectToVehicle(p->first, i->second, o->second->attach->vehicle, o->second->attach->positionOffset[0], o->second->attach->positionOffset[1], o->second->attach->positionOffset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2]);
 								}
 							}
 							else if (o->second->move)
 							{
-								sampgdk::MovePlayerObject(p->first, i->second, std::get<0>(o->second->move->position)[0], std::get<0>(o->second->move->position)[1], std::get<0>(o->second->move->position)[2], o->second->move->speed, std::get<0>(o->second->move->rotation)[0], std::get<0>(o->second->move->rotation)[1], std::get<0>(o->second->move->rotation)[2]);
+								StreamerApi::MovePlayerObject(p->first, i->second, std::get<0>(o->second->move->position)[0], std::get<0>(o->second->move->position)[1], std::get<0>(o->second->move->position)[2], o->second->move->speed, std::get<0>(o->second->move->rotation)[0], std::get<0>(o->second->move->rotation)[1], std::get<0>(o->second->move->rotation)[2]);
 							}
 							for (std::unordered_map<int, Item::Object::Material>::iterator m = o->second->materials.begin(); m != o->second->materials.end(); ++m)
 							{
 								if (m->second.main)
 								{
-									sampgdk::SetPlayerObjectMaterial(p->first, i->second, m->first, m->second.main->modelId, m->second.main->txdFileName.c_str(), m->second.main->textureName.c_str(), m->second.main->materialColor);
+									StreamerApi::SetPlayerObjectMaterial(p->first, i->second, m->first, m->second.main->modelId, m->second.main->txdFileName.c_str(), m->second.main->textureName.c_str(), m->second.main->materialColor);
 								}
 								else if (m->second.text)
 								{
-									sampgdk::SetPlayerObjectMaterialText(p->first, i->second, m->second.text->materialText.c_str(), m->first, m->second.text->materialSize, m->second.text->fontFace.c_str(), m->second.text->fontSize, m->second.text->bold, m->second.text->fontColor, m->second.text->backColor, m->second.text->textAlignment);
+									StreamerApi::SetPlayerObjectMaterialText(p->first, i->second, m->second.text->materialText.c_str(), m->first, m->second.text->materialSize, m->second.text->fontFace.c_str(), m->second.text->fontSize, m->second.text->bold, m->second.text->fontColor, m->second.text->backColor, m->second.text->textAlignment);
 								}
 							}
 							if (o->second->noCameraCollision)
 							{
-								sampgdk::SetPlayerObjectNoCameraCol(p->first, i->second);
+								StreamerApi::SetPlayerObjectNoCameraCol(p->first, i->second);
 							}
 						}
 					}
@@ -1115,8 +1115,8 @@ int Manipulation::setFloatData(AMX *amx, cell *params)
 						std::unordered_map<std::pair<int, int>, int, pair_hash>::iterator i = core->getData()->internalPickups.find(std::make_pair(p->first, *w));
 						if (i != core->getData()->internalPickups.end())
 						{
-							sampgdk::DestroyPickup(i->second);
-							i->second = sampgdk::CreatePickup(p->second->modelId, p->second->type, p->second->position[0], p->second->position[1], p->second->position[2], *w);
+							StreamerApi::DestroyPickup(i->second);
+							i->second = StreamerApi::CreatePickup(p->second->modelId, p->second->type, p->second->position[0], p->second->position[1], p->second->position[2], *w);
 						}
 					}
 				}
@@ -1193,7 +1193,7 @@ int Manipulation::setFloatData(AMX *amx, cell *params)
 					{
 						if (p->second.visibleCheckpoint == c->first)
 						{
-							sampgdk::DisablePlayerCheckpoint(p->first);
+							StreamerApi::DisablePlayerCheckpoint(p->first);
 							p->second.activeCheckpoint = 0;
 							p->second.visibleCheckpoint = 0;
 						}
@@ -1290,7 +1290,7 @@ int Manipulation::setFloatData(AMX *amx, cell *params)
 					{
 						if (p->second.visibleRaceCheckpoint == r->first)
 						{
-							sampgdk::DisablePlayerRaceCheckpoint(p->first);
+							StreamerApi::DisablePlayerRaceCheckpoint(p->first);
 							p->second.activeRaceCheckpoint = 0;
 							p->second.visibleRaceCheckpoint = 0;
 						}
@@ -1364,8 +1364,8 @@ int Manipulation::setFloatData(AMX *amx, cell *params)
 						std::unordered_map<int, int>::iterator i = p->second.internalMapIcons.find(m->first);
 						if (i != p->second.internalMapIcons.end())
 						{
-							sampgdk::RemovePlayerMapIcon(p->first, i->second);
-							sampgdk::SetPlayerMapIcon(p->first, i->second, m->second->position[0], m->second->position[1], m->second->position[2], m->second->type, m->second->color, m->second->style);
+							StreamerApi::RemovePlayerMapIcon(p->first, i->second);
+							StreamerApi::SetPlayerMapIcon(p->first, i->second, m->second->position[0], m->second->position[1], m->second->position[2], m->second->type, m->second->color, m->second->style);
 						}
 					}
 				}
@@ -1446,8 +1446,8 @@ int Manipulation::setFloatData(AMX *amx, cell *params)
 						std::unordered_map<int, int>::iterator i = p->second.internalTextLabels.find(t->first);
 						if (i != p->second.internalTextLabels.end())
 						{
-							sampgdk::DeletePlayer3DTextLabel(p->first, i->second);
-							i->second = sampgdk::CreatePlayer3DTextLabel(p->first, t->second->text.c_str(), t->second->color, t->second->position[0], t->second->position[1], t->second->position[2], t->second->drawDistance, t->second->attach ? t->second->attach->player : INVALID_PLAYER_ID, t->second->attach ? t->second->attach->vehicle : INVALID_VEHICLE_ID, t->second->testLOS);
+							StreamerApi::DeletePlayer3DTextLabel(p->first, i->second);
+							i->second = StreamerApi::CreatePlayer3DTextLabel(p->first, t->second->text.c_str(), t->second->color, t->second->position[0], t->second->position[1], t->second->position[2], t->second->drawDistance, t->second->attach ? t->second->attach->player : INVALID_PLAYER_ID, t->second->attach ? t->second->attach->vehicle : INVALID_VEHICLE_ID, t->second->testLOS);
 						}
 					}
 				}
@@ -1780,14 +1780,14 @@ int Manipulation::setFloatData(AMX *amx, cell *params)
 						std::unordered_map<std::pair<int, int>, int, pair_hash>::iterator i = core->getData()->internalActors.find(std::make_pair(a->first, *w));
 						if (i != core->getData()->internalActors.end())
 						{
-							sampgdk::DestroyActor(i->second);
-							i->second = sampgdk::CreateActor(a->second->modelId, a->second->position[0], a->second->position[1], a->second->position[2], a->second->rotation);
-							sampgdk::SetActorInvulnerable(i->second, a->second->invulnerable);
-							sampgdk::SetActorHealth(i->second, a->second->health);
-							sampgdk::SetActorVirtualWorld(i->second, *w);
+							StreamerApi::DestroyActor(i->second);
+							i->second = StreamerApi::CreateActor(a->second->modelId, a->second->position[0], a->second->position[1], a->second->position[2], a->second->rotation);
+							StreamerApi::SetActorInvulnerable(i->second, a->second->invulnerable);
+							StreamerApi::SetActorHealth(i->second, a->second->health);
+							StreamerApi::SetActorVirtualWorld(i->second, *w);
 							if (a->second->anim)
 							{
-								sampgdk::ApplyActorAnimation(i->second, a->second->anim->lib.c_str(), a->second->anim->name.c_str(), a->second->anim->delta, a->second->anim->loop, a->second->anim->lockx, a->second->anim->locky, a->second->anim->freeze, a->second->anim->time);
+								StreamerApi::ApplyActorAnimation(i->second, a->second->anim->lib.c_str(), a->second->anim->name.c_str(), a->second->anim->delta, a->second->anim->loop, a->second->anim->lockx, a->second->anim->locky, a->second->anim->freeze, a->second->anim->time);
 							}
 						}
 					}

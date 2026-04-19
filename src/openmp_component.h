@@ -17,33 +17,28 @@
 #ifndef OPENMP_COMPONENT_H
 #define OPENMP_COMPONENT_H
 
-#include <cstdint>
+struct ICore;
+struct IPawnComponent;
+struct IVehiclesComponent;
+struct IObjectsComponent;
+struct IPickupsComponent;
+struct IActorsComponent;
+struct ICheckpointsComponent;
+struct IClassesComponent;
 
-#include "sampgdk.h"
-
-#if defined(_WIN32)
-#define STREAMER_COMPONENT_EXPORT extern "C" __declspec(dllexport)
-#else
-#define STREAMER_COMPONENT_EXPORT extern "C" __attribute__((visibility("default")))
-#endif
-
-class StreamerComponentBase
+// Accessors to the open.mp runtime, usable anywhere in the streamer once onInit has fired
+// (sub-components become available then). Any of these can return nullptr if the corresponding
+// component is not loaded by the server.
+namespace StreamerRuntime
 {
-public:
-	virtual ~StreamerComponentBase() = default;
-	virtual const char *getName() const = 0;
-	virtual const char *getAuthor() const = 0;
-	virtual const char *getVersion() const = 0;
-	virtual std::uint64_t getUID() const = 0;
-	virtual bool onLoad(void **ppData) = 0;
-	virtual void onUnload() = 0;
-	virtual int onAmxLoad(AMX *amx) = 0;
-	virtual int onAmxUnload(AMX *amx) = 0;
-	virtual void onProcessTick() = 0;
-};
-
-STREAMER_COMPONENT_EXPORT StreamerComponentBase *ComponentEntryPoint();
-STREAMER_COMPONENT_EXPORT StreamerComponentBase *GetComponent();
-STREAMER_COMPONENT_EXPORT StreamerComponentBase *CreateComponent();
+	ICore *core();
+	IPawnComponent *pawn();
+	IVehiclesComponent *vehicles();
+	IObjectsComponent *objects();
+	IPickupsComponent *pickups();
+	IActorsComponent *actors();
+	ICheckpointsComponent *checkpoints();
+	IClassesComponent *classes();
+}
 
 #endif

@@ -277,7 +277,7 @@ void Utility::logError(const char *format, ...)
 		static std::string lastErrorMessage;
 		if (lastErrorMessage != buffer)
 		{
-			sampgdk::logprintf("*** Streamer Plugin: %s", buffer);
+			StreamerApi::logprintf("*** Streamer Plugin: %s", buffer);
 		}
 		lastErrorMessage = buffer;
 	}

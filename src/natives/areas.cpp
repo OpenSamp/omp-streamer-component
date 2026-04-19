@@ -256,7 +256,7 @@ cell AMX_NATIVE_CALL Natives::IsPlayerInDynamicArea(AMX *amx, cell *params)
 			std::unordered_map<int, Item::SharedArea>::const_iterator a = core->getData()->areas.find(static_cast<int>(params[2]));
 			if (a != core->getData()->areas.end())
 			{
-				return static_cast<cell>(core->getStreamer()->processPlayerArea(p->second, a->second, sampgdk::GetPlayerState(p->second.playerId)) != 0);
+				return static_cast<cell>(core->getStreamer()->processPlayerArea(p->second, a->second, StreamerApi::GetPlayerState(p->second.playerId)) != 0);
 			}
 		}
 	}
@@ -279,7 +279,7 @@ cell AMX_NATIVE_CALL Natives::IsPlayerInAnyDynamicArea(AMX *amx, cell *params)
 		}
 		else
 		{
-			int state = sampgdk::GetPlayerState(p->second.playerId);
+			int state = StreamerApi::GetPlayerState(p->second.playerId);
 			for (std::unordered_map<int, Item::SharedArea>::const_iterator a = core->getData()->areas.begin(); a != core->getData()->areas.end(); ++a)
 			{
 				if (core->getStreamer()->processPlayerArea(p->second, a->second, state) != 0)
@@ -315,7 +315,7 @@ cell AMX_NATIVE_CALL Natives::IsAnyPlayerInDynamicArea(AMX *amx, cell *params)
 			a = core->getData()->areas.find(static_cast<int>(params[1]));
 			if (a != core->getData()->areas.end())
 			{
-				return static_cast<cell>(core->getStreamer()->processPlayerArea(p->second, a->second, sampgdk::GetPlayerState(p->second.playerId)) != 0);
+				return static_cast<cell>(core->getStreamer()->processPlayerArea(p->second, a->second, StreamerApi::GetPlayerState(p->second.playerId)) != 0);
 			}
 		}
 	}
@@ -343,7 +343,7 @@ cell AMX_NATIVE_CALL Natives::IsAnyPlayerInAnyDynamicArea(AMX *amx, cell *params
 		{
 			for (a = core->getData()->areas.begin(); a != core->getData()->areas.end(); ++a)
 			{
-				if (core->getStreamer()->processPlayerArea(p->second, a->second, sampgdk::GetPlayerState(p->second.playerId)) != 0)
+				if (core->getStreamer()->processPlayerArea(p->second, a->second, StreamerApi::GetPlayerState(p->second.playerId)) != 0)
 				{
 					return 1;
 				}

@@ -4,9 +4,9 @@
 [submodule "lib/eigen"]
 	path = lib/eigen
 	url = git@github.com:eigenteam/eigen-git-mirror.git
-[submodule "lib/samp-plugin-sdk"]
-	path = lib/samp-plugin-sdk
-	url = git@github.com:AmyrAhmady/samp-plugin-sdk.git
 [submodule "lib/boost"]
 	path = lib/boost
 	url = git@github.com:scipy/boost-headers-only.git
+[submodule "lib/open.mp-sdk"]
+	path = lib/open.mp-sdk
+	url = git@github.com:openmultiplayer/open.mp-sdk.git
