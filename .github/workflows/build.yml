@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [master]
+    tags: ['v*']
   pull_request:
     branches: ['*', '*/*', '**']
 
@@ -109,3 +110,59 @@ jobs:
           name: streamer-linux-${{ matrix.arch }}-${{ matrix.config }}-${{ steps.vars.outputs.date }}-${{ steps.vars.outputs.sha_short }}
           path: build/bin/streamer.so
           if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [windows, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Package releases
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          tag="${GITHUB_REF#refs/tags/}"
+          mkdir -p dist
+
+          package_one() {
+            local os="$1" arch="$2" binary="$3"
+            local src_glob="artifacts/streamer-${os}-${arch}-Release-*"
+            local src=( $src_glob )
+            if [ ${#src[@]} -eq 0 ]; then
+              echo "::error::No Release artifact found for ${os}-${arch}"
+              exit 1
+            fi
+
+            local stage="pack/streamer-${os}-${arch}"
+            rm -rf "$stage"
+            mkdir -p "$stage"
+            cp "${src[0]}/${binary}" "$stage/"
+            cp streamer.inc README.md CHANGES.md LICENSE.md "$stage/"
+
+            (cd pack && zip -r "../dist/streamer-${tag}-${os}-${arch}.zip" "streamer-${os}-${arch}")
+          }
+
+          package_one windows x86 streamer.dll
+          package_one windows x64 streamer.dll
+          package_one linux   x86 streamer.so
+          package_one linux   x64 streamer.so
+
+          ls -lh dist
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref, '-') }}

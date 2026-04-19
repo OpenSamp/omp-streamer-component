@@ -43,8 +43,14 @@ int Utility::checkInterfaceAndRegisterNatives(AMX *amx, AMX_NATIVE_INFO *amxNati
 			foundNatives = true;
 			if (!amxNativeTable[i].address)
 			{
+#if UINTPTR_MAX <= 0xFFFFFFFFu
+				// On 32-bit hosts we can stash a function pointer inside the cell-sized
+				// `address` slot so scripts referencing an unregistered Streamer_* native
+				// don't fail at amx_Init. On 64-bit this can't work — cell stays int32 —
+				// so we leave the slot empty and let the AMX VM report the missing native.
 				amxNativeTable[i].address = reinterpret_cast<cell>(hookedNative);
 				hookedNatives = true;
+#endif
 			}
 		}
 	}

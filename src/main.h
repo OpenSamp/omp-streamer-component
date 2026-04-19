@@ -37,6 +37,7 @@
 #include <bitset>
 #include <cmath>
 #include <cstdarg>
+#include <cstdint>
 #include <cstdio>
 #include <functional>
 #include <limits>
