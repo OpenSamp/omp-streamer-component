@@ -534,7 +534,7 @@ namespace StreamerApi
 	{
 		IPlayer *p = resolvePlayer(playerid);
 		if (!p) return false;
-		p->setMapIcon(iconid, Vector3(x, y, z), markertype, Colour::FromARGB(static_cast<uint32_t>(color)), static_cast<MapIconStyle>(style));
+		p->setMapIcon(iconid, Vector3(x, y, z), markertype, Colour::FromRGBA(static_cast<uint32_t>(color)), static_cast<MapIconStyle>(style));
 		return true;
 	}
 
@@ -696,7 +696,7 @@ namespace StreamerApi
 		if (!data) return INVALID_3DTEXT_ID;
 
 		StringView txt(text ? text : "");
-		Colour c = Colour::FromARGB(static_cast<uint32_t>(color));
+		Colour c = Colour::FromRGBA(static_cast<uint32_t>(color));
 		Vector3 pos(x, y, z);
 		IPlayerTextLabel *label = nullptr;
 
@@ -735,7 +735,7 @@ namespace StreamerApi
 		if (!data) return false;
 		IPlayerTextLabel *label = data->get(id);
 		if (!label) return false;
-		label->setColourAndText(Colour::FromARGB(static_cast<uint32_t>(color)), StringView(text ? text : ""));
+		label->setColourAndText(Colour::FromRGBA(static_cast<uint32_t>(color)), StringView(text ? text : ""));
 		return true;
 	}
 }
