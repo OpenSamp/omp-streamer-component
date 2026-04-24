@@ -18,6 +18,7 @@
 
 #include "streamer.h"
 #include "core.h"
+#include "streamer_component_api.h"
 
 Streamer::Streamer()
 {
@@ -464,6 +465,7 @@ void Streamer::executeCallbacks()
 						amx_Exec(*i, NULL, amxIndex);
 					}
 				}
+				for (auto* h : GetStreamerEventHandlers()) h->onDynamicObjectMoved(*c);
 			}
 		}
 	}
@@ -535,6 +537,18 @@ void Streamer::executeCallbacks()
 					amx_Exec(*i, NULL, amxIndex);
 				}
 			}
+			for (auto* h : GetStreamerEventHandlers())
+			{
+				int type = std::get<0>(*c), id = std::get<1>(*c), forPlayer = std::get<2>(*c);
+				switch (type)
+				{
+					case STREAMER_TYPE_OBJECT:         h->onDynamicObjectStreamIn(id, forPlayer); break;
+					case STREAMER_TYPE_PICKUP:         h->onDynamicPickupStreamIn(id, forPlayer); break;
+					case STREAMER_TYPE_CP:             h->onDynamicCheckpointStreamIn(id, forPlayer); break;
+					case STREAMER_TYPE_MAP_ICON:       h->onDynamicMapIconStreamIn(id, forPlayer); break;
+					case STREAMER_TYPE_3D_TEXT_LABEL:  h->onDynamicTextLabelStreamIn(id, forPlayer); break;
+				}
+			}
 		}
 	}
 	if (!streamOutCallbacks.empty())
@@ -603,6 +617,18 @@ void Streamer::executeCallbacks()
 					amx_Push(*i, static_cast<cell>(std::get<1>(*c)));
 					amx_Push(*i, static_cast<cell>(std::get<0>(*c)));
 					amx_Exec(*i, NULL, amxIndex);
+				}
+			}
+			for (auto* h : GetStreamerEventHandlers())
+			{
+				int type = std::get<0>(*c), id = std::get<1>(*c), forPlayer = std::get<2>(*c);
+				switch (type)
+				{
+					case STREAMER_TYPE_OBJECT:         h->onDynamicObjectStreamOut(id, forPlayer); break;
+					case STREAMER_TYPE_PICKUP:         h->onDynamicPickupStreamOut(id, forPlayer); break;
+					case STREAMER_TYPE_CP:             h->onDynamicCheckpointStreamOut(id, forPlayer); break;
+					case STREAMER_TYPE_MAP_ICON:       h->onDynamicMapIconStreamOut(id, forPlayer); break;
+					case STREAMER_TYPE_3D_TEXT_LABEL:  h->onDynamicTextLabelStreamOut(id, forPlayer); break;
 				}
 			}
 		}

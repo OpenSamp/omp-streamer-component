@@ -14,6 +14,7 @@ set(PLUGIN_SOURCES
 	openmp_component.cpp
 	player.cpp
 	streamer_api.cpp
+	streamer_component_api.cpp
 	streamer.cpp
 )
 

@@ -42,6 +42,7 @@
 #include "natives_table.h"
 #include "openmp_component.h"
 #include "streamer_callbacks.h"
+#include "streamer_component_api.h"
 
 extern void *pAMXFunctions;
 
@@ -187,6 +188,15 @@ namespace
 		}
 
 		void reset() override { }
+
+		IExtension *getExtension(UID id) override
+		{
+			if (id == IStreamerComponent::ExtensionIID)
+			{
+				return static_cast<IExtension *>(GetStreamerExtension());
+			}
+			return IComponent::getExtension(id);
+		}
 
 		// --- CoreEventHandler ---------------------------------------------------------------
 		void onTick(Microseconds /*elapsed*/, TimePoint now) override

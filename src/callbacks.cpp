@@ -17,6 +17,7 @@
 #include "main.h"
 
 #include "core.h"
+#include "streamer_component_api.h"
 
 namespace
 {
@@ -146,6 +147,7 @@ bool Streamer_OnPlayerEnterCheckpoint(int playerid)
 	int checkpointid = player.visibleCheckpoint;
 	player.activeCheckpoint = checkpointid;
 	dispatchPublic("OnPlayerEnterDynamicCP", playerid, checkpointid);
+	for (auto* h : GetStreamerEventHandlers()) h->onPlayerEnterDynamicCheckpoint(playerid, checkpointid);
 	return true;
 }
 
@@ -159,6 +161,7 @@ bool Streamer_OnPlayerLeaveCheckpoint(int playerid)
 	int checkpointid = player.activeCheckpoint;
 	player.activeCheckpoint = 0;
 	dispatchPublic("OnPlayerLeaveDynamicCP", playerid, checkpointid);
+	for (auto* h : GetStreamerEventHandlers()) h->onPlayerLeaveDynamicCheckpoint(playerid, checkpointid);
 	return true;
 }
 
@@ -172,6 +175,7 @@ bool Streamer_OnPlayerEnterRaceCheckpoint(int playerid)
 	int checkpointid = player.visibleRaceCheckpoint;
 	player.activeRaceCheckpoint = checkpointid;
 	dispatchPublic("OnPlayerEnterDynamicRaceCP", playerid, checkpointid);
+	for (auto* h : GetStreamerEventHandlers()) h->onPlayerEnterDynamicRaceCheckpoint(playerid, checkpointid);
 	return true;
 }
 
@@ -185,6 +189,7 @@ bool Streamer_OnPlayerLeaveRaceCheckpoint(int playerid)
 	int checkpointid = player.activeRaceCheckpoint;
 	player.activeRaceCheckpoint = 0;
 	dispatchPublic("OnPlayerLeaveDynamicRaceCP", playerid, checkpointid);
+	for (auto* h : GetStreamerEventHandlers()) h->onPlayerLeaveDynamicRaceCheckpoint(playerid, checkpointid);
 	return true;
 }
 
@@ -195,6 +200,7 @@ bool Streamer_OnPlayerPickUpPickup(int playerid, int pickupid)
 		if (entry.second == pickupid)
 		{
 			dispatchPublic("OnPlayerPickUpDynamicPickup", playerid, entry.first.first);
+			for (auto* h : GetStreamerEventHandlers()) h->onPlayerPickUpDynamicPickup(playerid, entry.first.first);
 			break;
 		}
 	}
@@ -229,6 +235,11 @@ bool Streamer_OnPlayerEditObject(int playerid, bool playerobject, int objectid, 
 		}
 		dispatchPublicBreakOnTruthy("OnPlayerEditDynamicObject",
 			playerid, dynObjectId, response, fX, fY, fZ, fRotX, fRotY, fRotZ);
+		for (auto* h : GetStreamerEventHandlers())
+		{
+			if (h->onPlayerEditDynamicObject(playerid, dynObjectId, response, fX, fY, fZ, fRotX, fRotY, fRotZ)
+				== StreamerHandlerResult::Consume) break;
+		}
 		return true;
 	}
 	return false;
@@ -246,6 +257,11 @@ bool Streamer_OnPlayerSelectObject(int playerid, int type, int objectid, int mod
 		if (internal.second != objectid) continue;
 		dispatchPublicBreakOnTruthy("OnPlayerSelectDynamicObject",
 			playerid, internal.first, modelid, x, y, z);
+		for (auto* h : GetStreamerEventHandlers())
+		{
+			if (h->onPlayerSelectDynamicObject(playerid, internal.first, modelid, x, y, z)
+				== StreamerHandlerResult::Consume) break;
+		}
 		return true;
 	}
 	return false;
@@ -261,8 +277,14 @@ bool Streamer_OnPlayerWeaponShot(int playerid, int weaponid, int hittype, int hi
 	for (const auto &internal : playerIt->second.internalObjects)
 	{
 		if (internal.second != hitid) continue;
-		return dispatchPublicRequireAll("OnPlayerShootDynamicObject",
+		bool allow = dispatchPublicRequireAll("OnPlayerShootDynamicObject",
 			playerid, weaponid, internal.first, x, y, z);
+		for (auto* h : GetStreamerEventHandlers())
+		{
+			if (h->onPlayerShootDynamicObject(playerid, weaponid, internal.first, x, y, z)
+				== StreamerHandlerResult::Veto) allow = false;
+		}
+		return allow;
 	}
 	return true;
 }
