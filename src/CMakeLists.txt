@@ -48,7 +48,47 @@ target_link_libraries(${PROJECT_NAME} PRIVATE OMP-SDK)
 target_compile_definitions(${PROJECT_NAME} PRIVATE
 	_SILENCE_CXX17_NEGATORS_DEPRECATION_WARNING
 	_SILENCE_CXX17_ADAPTOR_TYPEDEFS_DEPRECATION_WARNING
+	# C++20 removes std::unary_negate / std::binary_negate that the vendored Eigen 3.3.4
+	# still references. Re-enable them in MSVC's stdlib until we bump Eigen to 3.4.
+	_HAS_DEPRECATED_NEGATORS=1
+	_HAS_DEPRECATED_ADAPTOR_TYPEDEFS=1
+	# Boost pulls a few removed/changed std facilities that still show up in C++20 builds.
+	_HAS_DEPRECATED_RESULT_OF=1
 )
+
+# Strict warnings. Our source compiles clean at /W4 / -Wall -Wextra; noise comes
+# almost entirely from third-party headers (boost/eigen/glm/open.mp-sdk) so we
+# blanket-disable their top offenders.
+if(MSVC)
+	target_compile_options(${PROJECT_NAME} PRIVATE
+		/W4
+		# Third-party spam leaking through PCH:
+		/wd4127 # conditional expression is constant (boost::geometry template chain)
+		/wd4201 # nonstandard extension: nameless struct/union (glm/open.mp types)
+		/wd4244 # conversion, possible loss of data (AMX cell <-> int mixing)
+		/wd4267 # conversion from size_t, possible loss of data
+		/wd4702 # unreachable code (boost macros)
+	)
+else()
+	target_compile_options(${PROJECT_NAME} PRIVATE
+		-Wall
+		-Wextra
+		-Wno-unused-parameter
+		-Wno-sign-compare
+	)
+endif()
+
+# Optional AddressSanitizer build: -DSTREAMER_ASAN=ON.
+option(STREAMER_ASAN "Build with AddressSanitizer" OFF)
+if(STREAMER_ASAN)
+	if(MSVC)
+		target_compile_options(${PROJECT_NAME} PRIVATE /fsanitize=address)
+	else()
+		target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+		target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
+	endif()
+	message(STATUS "Streamer: AddressSanitizer enabled")
+endif()
 
 # Platform / architecture handling.
 if(WIN32)

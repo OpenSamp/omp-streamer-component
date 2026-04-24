@@ -162,3 +162,119 @@ cell AMX_NATIVE_CALL Natives::Streamer_UpdateEx(AMX *amx, cell *params)
 	}
 	return 0;
 }
+
+// --- Phase telemetry (VS:RP fork) ---------------------------------------------------
+
+cell AMX_NATIVE_CALL Natives::Streamer_GetPhaseTimeNs(AMX *amx, cell *params)
+{
+	CHECK_PARAMS(1);
+	const int type = static_cast<int>(params[1]);
+	if (type < 0 || type >= STREAMER_MAX_TYPES)
+	{
+		Utility::logError("Streamer_GetPhaseTimeNs: invalid type %d.", type);
+		return 0;
+	}
+	// AMX cell is int32; clamp to avoid wrap. Callers should reset often.
+	const uint64_t v = core->getStreamer()->phaseTimeNs[type];
+	if (v > static_cast<uint64_t>(std::numeric_limits<cell>::max()))
+	{
+		return std::numeric_limits<cell>::max();
+	}
+	return static_cast<cell>(v);
+}
+
+cell AMX_NATIVE_CALL Natives::Streamer_GetPhaseAvgUs(AMX *amx, cell *params)
+{
+	CHECK_PARAMS(1);
+	const int type = static_cast<int>(params[1]);
+	if (type < 0 || type >= STREAMER_MAX_TYPES)
+	{
+		Utility::logError("Streamer_GetPhaseAvgUs: invalid type %d.", type);
+		return 0;
+	}
+	const auto ticks = core->getStreamer()->phaseTickCount;
+	if (ticks == 0)
+	{
+		return 0;
+	}
+	const uint64_t totalNs = core->getStreamer()->phaseTimeNs[type];
+	const uint64_t avgUs = (totalNs / ticks) / 1000ULL;
+	if (avgUs > static_cast<uint64_t>(std::numeric_limits<cell>::max()))
+	{
+		return std::numeric_limits<cell>::max();
+	}
+	return static_cast<cell>(avgUs);
+}
+
+cell AMX_NATIVE_CALL Natives::Streamer_GetPhaseTickCount(AMX *amx, cell *params)
+{
+	(void)amx; (void)params;
+	const auto ticks = core->getStreamer()->phaseTickCount;
+	if (ticks > static_cast<std::size_t>(std::numeric_limits<cell>::max()))
+	{
+		return std::numeric_limits<cell>::max();
+	}
+	return static_cast<cell>(ticks);
+}
+
+cell AMX_NATIVE_CALL Natives::Streamer_ResetPhaseStats(AMX *amx, cell *params)
+{
+	(void)amx; (void)params;
+	core->getStreamer()->resetStats();
+	return 1;
+}
+
+cell AMX_NATIVE_CALL Natives::Streamer_GetPhaseStreamInCount(AMX *amx, cell *params)
+{
+	CHECK_PARAMS(1);
+	const int type = static_cast<int>(params[1]);
+	if (type < 0 || type >= STREAMER_MAX_TYPES)
+	{
+		Utility::logError("Streamer_GetPhaseStreamInCount: invalid type %d.", type);
+		return 0;
+	}
+	const uint64_t v = core->getStreamer()->phaseStreamInCount[type];
+	if (v > static_cast<uint64_t>(std::numeric_limits<cell>::max()))
+	{
+		return std::numeric_limits<cell>::max();
+	}
+	return static_cast<cell>(v);
+}
+
+cell AMX_NATIVE_CALL Natives::Streamer_GetPhaseStreamOutCount(AMX *amx, cell *params)
+{
+	CHECK_PARAMS(1);
+	const int type = static_cast<int>(params[1]);
+	if (type < 0 || type >= STREAMER_MAX_TYPES)
+	{
+		Utility::logError("Streamer_GetPhaseStreamOutCount: invalid type %d.", type);
+		return 0;
+	}
+	const uint64_t v = core->getStreamer()->phaseStreamOutCount[type];
+	if (v > static_cast<uint64_t>(std::numeric_limits<cell>::max()))
+	{
+		return std::numeric_limits<cell>::max();
+	}
+	return static_cast<cell>(v);
+}
+
+cell AMX_NATIVE_CALL Natives::Streamer_GetHysteresisFactor(AMX *amx, cell *params)
+{
+	CHECK_PARAMS(1);
+	const int type = static_cast<int>(params[1]);
+	float v = core->getStreamer()->getHysteresisFactor(type);
+	return amx_ftoc(v);
+}
+
+cell AMX_NATIVE_CALL Natives::Streamer_SetHysteresisFactor(AMX *amx, cell *params)
+{
+	CHECK_PARAMS(2);
+	const int type = static_cast<int>(params[1]);
+	const float value = amx_ctof(params[2]);
+	if (!core->getStreamer()->setHysteresisFactor(type, value))
+	{
+		Utility::logError("Streamer_SetHysteresisFactor: invalid type %d or factor %f (must be in [1.0, 10.0]).", type, value);
+		return 0;
+	}
+	return 1;
+}

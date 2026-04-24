@@ -71,6 +71,16 @@ namespace Natives
 	cell AMX_NATIVE_CALL Streamer_GetLastUpdateTime(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_Update(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_UpdateEx(AMX *amx, cell *params);
+	// Telemetry (VS:RP fork addition) — per-phase cumulative timing.
+	cell AMX_NATIVE_CALL Streamer_GetPhaseTimeNs(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL Streamer_GetPhaseAvgUs(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL Streamer_GetPhaseTickCount(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL Streamer_ResetPhaseStats(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL Streamer_GetPhaseStreamInCount(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL Streamer_GetPhaseStreamOutCount(AMX *amx, cell *params);
+	// Anti-flicker hysteresis (VS:RP fork).
+	cell AMX_NATIVE_CALL Streamer_GetHysteresisFactor(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL Streamer_SetHysteresisFactor(AMX *amx, cell *params);
 	// Data Manipulation
 	cell AMX_NATIVE_CALL Streamer_GetFloatData(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_SetFloatData(AMX *amx, cell *params);

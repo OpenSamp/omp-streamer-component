@@ -64,6 +64,15 @@ AMX_NATIVE_INFO gStreamerNatives[] =
 	{ "Streamer_GetLastUpdateTime", Natives::Streamer_GetLastUpdateTime },
 	{ "Streamer_Update", Natives::Streamer_Update },
 	{ "Streamer_UpdateEx", Natives::Streamer_UpdateEx },
+	// Telemetry (VS:RP fork)
+	{ "Streamer_GetPhaseTimeNs", Natives::Streamer_GetPhaseTimeNs },
+	{ "Streamer_GetPhaseAvgUs", Natives::Streamer_GetPhaseAvgUs },
+	{ "Streamer_GetPhaseTickCount", Natives::Streamer_GetPhaseTickCount },
+	{ "Streamer_ResetPhaseStats", Natives::Streamer_ResetPhaseStats },
+	{ "Streamer_GetPhaseStreamInCount", Natives::Streamer_GetPhaseStreamInCount },
+	{ "Streamer_GetPhaseStreamOutCount", Natives::Streamer_GetPhaseStreamOutCount },
+	{ "Streamer_GetHysteresisFactor", Natives::Streamer_GetHysteresisFactor },
+	{ "Streamer_SetHysteresisFactor", Natives::Streamer_SetHysteresisFactor },
 	// Data Manipulation
 	{ "Streamer_GetFloatData", Natives::Streamer_GetFloatData },
 	{ "Streamer_SetFloatData", Natives::Streamer_SetFloatData },

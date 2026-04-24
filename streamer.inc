@@ -227,6 +227,24 @@ native Streamer_GetLastUpdateTime(&Float:time);
 native Streamer_Update(playerid, type = -1);
 native Streamer_UpdateEx(playerid, Float:x, Float:y, Float:z, worldid = -1, interiorid = -1, type = -1, compensatedtime = -1, freezeplayer = 1);
 
+// Telemetry (VS:RP fork) — per-phase, cumulative since last reset.
+// `type` is one of STREAMER_TYPE_OBJECT / STREAMER_TYPE_CP / STREAMER_TYPE_RACE_CP /
+// STREAMER_TYPE_MAP_ICON / STREAMER_TYPE_3D_TEXT_LABEL / STREAMER_TYPE_AREA.
+// (ACTOR and PICKUP streams aren't per-player; their numbers will be ~0.)
+native Streamer_GetPhaseTimeNs(type);    // cumulative ns, clamped to INT_MAX
+native Streamer_GetPhaseAvgUs(type);     // avg microseconds per player-tick in this phase
+native Streamer_GetPhaseTickCount();     // number of per-player ticks since reset
+native Streamer_ResetPhaseStats();       // zero all counters
+native Streamer_GetPhaseStreamInCount(type);   // count of client-create calls since reset
+native Streamer_GetPhaseStreamOutCount(type);  // count of client-destroy calls since reset
+
+// Anti-flicker hysteresis (VS:RP fork). When factor > 1.0, items already streamed stay
+// streamed until the player is `factor * streamDistance` away (boundary-snap avoided).
+// Default 1.0 (legacy behavior). Recommended 1.05..1.10. Applies to OBJECT, MAP_ICON,
+// 3D_TEXT_LABEL; ignored for other types.
+native Float:Streamer_GetHysteresisFactor(type);
+native Streamer_SetHysteresisFactor(type, Float:factor);
+
 // Natives (Data Manipulation)
 
 native Streamer_GetFloatData(type, STREAMER_ALL_TAGS:id, data, &Float:result);

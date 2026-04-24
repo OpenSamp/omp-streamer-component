@@ -22,6 +22,19 @@
 
 namespace Utility
 {
+	// Fast squared-distance equivalents of boost::geometry::comparable_distance for the
+	// point-to-point case. Same ordering semantics as boost, but cuts out the traits
+	// machinery so the code lowers to a single Eigen vector subtract + dot product.
+	inline float squaredDistance3(const Eigen::Vector3f &a, const Eigen::Vector3f &b) noexcept
+	{
+		return (a - b).squaredNorm();
+	}
+
+	inline float squaredDistance2(const Eigen::Vector2f &a, const Eigen::Vector2f &b) noexcept
+	{
+		return (a - b).squaredNorm();
+	}
+
 	bool doesLineSegmentIntersectArea(const Eigen::Vector3f &lineSegmentStart, const Eigen::Vector3f &lineSegmentEnd, const Item::SharedArea &area);
 	bool isPointInArea(const Eigen::Vector3f &point, const Item::SharedArea &area);
 

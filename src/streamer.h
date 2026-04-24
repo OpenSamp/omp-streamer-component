@@ -17,6 +17,9 @@
 #ifndef STREAMER_H
 #define STREAMER_H
 
+#include <array>
+#include <cstdint>
+
 #include "cell.h"
 #include "item.h"
 #include "player.h"
@@ -49,10 +52,43 @@ public:
 
 	void startAutomaticUpdate();
 	void startManualUpdate(Player &player, int type);
-	
+
 	bool processPlayerArea(Player &player, const Item::SharedArea &a, const int state);
 
 	void processActiveItems();
+
+	// Phase telemetry: per-tick, per-streamer-type time budget + streamed counts.
+	// Cumulative until `resetStats()` is called. Indexed by STREAMER_TYPE_*.
+	std::array<uint64_t, STREAMER_MAX_TYPES> phaseTimeNs{};
+	std::array<uint64_t, STREAMER_MAX_TYPES> phaseStreamInCount{};
+	std::array<uint64_t, STREAMER_MAX_TYPES> phaseStreamOutCount{};
+	std::size_t phaseTickCount = 0;
+	inline void resetStats()
+	{
+		phaseTimeNs.fill(0);
+		phaseStreamInCount.fill(0);
+		phaseStreamOutCount.fill(0);
+		phaseTickCount = 0;
+	}
+
+	// Stream-out hysteresis (anti-flicker). Multiplier applied to the destroy-check
+	// radius per type: an item already streamed in stays streamed in until the player
+	// is `hysteresisFactor * streamDistance` away. Default 1.0 = off (legacy behavior).
+	// Typical recommended value: 1.05 .. 1.10.
+	std::array<float, STREAMER_MAX_TYPES> hysteresisFactor{};
+	inline float getHysteresisFactor(int type) const
+	{
+		if (type < 0 || type >= STREAMER_MAX_TYPES) return 1.0f;
+		const float v = hysteresisFactor[type];
+		return v > 0.0f ? v : 1.0f;
+	}
+	inline bool setHysteresisFactor(int type, float value)
+	{
+		if (type < 0 || type >= STREAMER_MAX_TYPES) return false;
+		if (!(value >= 1.0f && value <= 10.0f)) return false; // reject NaN, negative, silly large
+		hysteresisFactor[type] = value;
+		return true;
+	}
 
 	std::unordered_set<Item::SharedArea> attachedAreas;
 	std::unordered_set<Item::SharedObject> attachedObjects;
