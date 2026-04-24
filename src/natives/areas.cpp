@@ -23,18 +23,26 @@
 cell AMX_NATIVE_CALL Natives::CreateDynamicCircle(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(7);
+	const float x = amx_ctof(params[1]), y = amx_ctof(params[2]);
+	const float size = amx_ctof(params[3]);
+	if (!Validation::isCoordInRange(x) || !Validation::isCoordInRange(y))
+	{
+		Utility::logError("CreateDynamicCircle: invalid position.");
+		return 0;
+	}
+	CHECK_RADIUS(size);
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_AREA) == core->getData()->areas.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int areaId = Item::Area::identifier.get();
-	Item::SharedArea area(new Item::Area);
+	Item::SharedArea area = std::make_shared<Item::Area>();
 	area->amx = amx;
 	area->areaId = areaId;
 	area->type = STREAMER_AREA_TYPE_CIRCLE;
-	area->position = Eigen::Vector2f(amx_ctof(params[1]), amx_ctof(params[2]));
-	area->comparableSize = amx_ctof(params[3]) * amx_ctof(params[3]);
-	area->size = amx_ctof(params[3]);
+	area->position = Eigen::Vector2f(x, y);
+	area->comparableSize = size * size;
+	area->size = size;
 	Utility::addToContainer(area->worlds, static_cast<int>(params[4]));
 	Utility::addToContainer(area->interiors, static_cast<int>(params[5]));
 	Utility::addToContainer(area->players, static_cast<int>(params[6]));
@@ -47,19 +55,28 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicCircle(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::CreateDynamicCylinder(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(9);
+	const float x = amx_ctof(params[1]), y = amx_ctof(params[2]);
+	const float minZ = amx_ctof(params[3]), maxZ = amx_ctof(params[4]);
+	const float size = amx_ctof(params[5]);
+	if (!Validation::isCoordInRange(x) || !Validation::isCoordInRange(y) || !Validation::isFinitef(minZ) || !Validation::isFinitef(maxZ))
+	{
+		Utility::logError("CreateDynamicCylinder: invalid position or height.");
+		return 0;
+	}
+	CHECK_RADIUS(size);
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_AREA) == core->getData()->areas.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int areaId = Item::Area::identifier.get();
-	Item::SharedArea area(new Item::Area);
+	Item::SharedArea area = std::make_shared<Item::Area>();
 	area->amx = amx;
 	area->areaId = areaId;
 	area->type = STREAMER_AREA_TYPE_CYLINDER;
-	area->position = Eigen::Vector2f(amx_ctof(params[1]), amx_ctof(params[2]));
-	area->height = Eigen::Vector2f(amx_ctof(params[3]), amx_ctof(params[4]));
-	area->comparableSize = amx_ctof(params[5]) * amx_ctof(params[5]);
-	area->size = amx_ctof(params[5]);
+	area->position = Eigen::Vector2f(x, y);
+	area->height = Eigen::Vector2f(minZ, maxZ);
+	area->comparableSize = size * size;
+	area->size = size;
 	Utility::addToContainer(area->worlds, static_cast<int>(params[6]));
 	Utility::addToContainer(area->interiors, static_cast<int>(params[7]));
 	Utility::addToContainer(area->players, static_cast<int>(params[8]));
@@ -72,19 +89,23 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicCylinder(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::CreateDynamicSphere(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(8);
+	const float px = amx_ctof(params[1]), py = amx_ctof(params[2]), pz = amx_ctof(params[3]);
+	const float size = amx_ctof(params[4]);
+	CHECK_POS_VEC3(px, py, pz);
+	CHECK_RADIUS(size);
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_AREA) == core->getData()->areas.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int areaId = Item::Area::identifier.get();
-	Item::SharedArea area(new Item::Area);
+	Item::SharedArea area = std::make_shared<Item::Area>();
 	area->amx = amx;
 	area->areaId = areaId;
 	area->spectateMode = true;
 	area->type = STREAMER_AREA_TYPE_SPHERE;
-	area->position = Eigen::Vector3f(amx_ctof(params[1]), amx_ctof(params[2]), amx_ctof(params[3]));
-	area->comparableSize = amx_ctof(params[4]) * amx_ctof(params[4]);
-	area->size = amx_ctof(params[4]);
+	area->position = Eigen::Vector3f(px, py, pz);
+	area->comparableSize = size * size;
+	area->size = size;
 	Utility::addToContainer(area->worlds, static_cast<int>(params[5]));
 	Utility::addToContainer(area->interiors, static_cast<int>(params[6]));
 	Utility::addToContainer(area->players, static_cast<int>(params[7]));
@@ -97,17 +118,24 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicSphere(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::CreateDynamicRectangle(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(8);
+	const float x1 = amx_ctof(params[1]), y1 = amx_ctof(params[2]);
+	const float x2 = amx_ctof(params[3]), y2 = amx_ctof(params[4]);
+	if (!Validation::isCoordInRange(x1) || !Validation::isCoordInRange(y1) || !Validation::isCoordInRange(x2) || !Validation::isCoordInRange(y2))
+	{
+		Utility::logError("CreateDynamicRectangle: invalid rectangle coordinates.");
+		return 0;
+	}
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_AREA) == core->getData()->areas.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int areaId = Item::Area::identifier.get();
-	Item::SharedArea area(new Item::Area);
+	Item::SharedArea area = std::make_shared<Item::Area>();
 	area->amx = amx;
 	area->areaId = areaId;
 	area->spectateMode = true;
 	area->type = STREAMER_AREA_TYPE_RECTANGLE;
-	area->position = Box2d(Eigen::Vector2f(amx_ctof(params[1]), amx_ctof(params[2])), Eigen::Vector2f(amx_ctof(params[3]), amx_ctof(params[4])));
+	area->position = Box2d(Eigen::Vector2f(x1, y1), Eigen::Vector2f(x2, y2));
 	boost::geometry::correct(std::get<Box2d>(area->position));
 	area->comparableSize = static_cast<float>(boost::geometry::comparable_distance(std::get<Box2d>(area->position).min_corner(), std::get<Box2d>(area->position).max_corner()));
 	area->size = static_cast<float>(boost::geometry::distance(std::get<Box2d>(area->position).min_corner(), std::get<Box2d>(area->position).max_corner()));
@@ -123,17 +151,21 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicRectangle(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::CreateDynamicCuboid(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(10);
+	const float x1 = amx_ctof(params[1]), y1 = amx_ctof(params[2]), z1 = amx_ctof(params[3]);
+	const float x2 = amx_ctof(params[4]), y2 = amx_ctof(params[5]), z2 = amx_ctof(params[6]);
+	CHECK_POS_VEC3(x1, y1, z1);
+	CHECK_POS_VEC3(x2, y2, z2);
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_AREA) == core->getData()->areas.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int areaId = Item::Area::identifier.get();
-	Item::SharedArea area(new Item::Area);
+	Item::SharedArea area = std::make_shared<Item::Area>();
 	area->amx = amx;
 	area->areaId = areaId;
 	area->spectateMode = true;
 	area->type = STREAMER_AREA_TYPE_CUBOID;
-	area->position = Box3d(Eigen::Vector3f(amx_ctof(params[1]), amx_ctof(params[2]), amx_ctof(params[3])), Eigen::Vector3f(amx_ctof(params[4]), amx_ctof(params[5]), amx_ctof(params[6])));
+	area->position = Box3d(Eigen::Vector3f(x1, y1, z1), Eigen::Vector3f(x2, y2, z2));
 	boost::geometry::correct(std::get<Box3d>(area->position));
 	area->comparableSize = static_cast<float>(boost::geometry::comparable_distance(Eigen::Vector2f(std::get<Box3d>(area->position).min_corner()[0], std::get<Box3d>(area->position).min_corner()[1]), Eigen::Vector2f(std::get<Box3d>(area->position).max_corner()[0], std::get<Box3d>(area->position).max_corner()[1])));
 	area->size = static_cast<float>(boost::geometry::distance(Eigen::Vector2f(std::get<Box3d>(area->position).min_corner()[0], std::get<Box3d>(area->position).min_corner()[1]), Eigen::Vector2f(std::get<Box3d>(area->position).max_corner()[0], std::get<Box3d>(area->position).max_corner()[1])));
@@ -149,17 +181,24 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicCuboid(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::CreateDynamicPolygon(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(8);
+	const int pointCount = static_cast<int>(params[4]);
+	const float minZ = amx_ctof(params[2]), maxZ = amx_ctof(params[3]);
+	if (!Validation::isFinitef(minZ) || !Validation::isFinitef(maxZ))
+	{
+		Utility::logError("CreateDynamicPolygon: invalid height bounds.");
+		return 0;
+	}
+	if (!Validation::isPolygonArraySize(pointCount))
+	{
+		Utility::logError("CreateDynamicPolygon: Number of points %d invalid (must be even and >= 6).", pointCount);
+		return INVALID_STREAMER_ID;
+	}
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_AREA) == core->getData()->areas.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
-	if (static_cast<int>(params[4]) < 6 || static_cast<int>(params[4]) % 2)
-	{
-		Utility::logError("CreateDynamicPolygon: Number of points must be divisible by 2 and bigger or equal to 6.");
-		return INVALID_STREAMER_ID;
-	}
 	int areaId = Item::Area::identifier.get();
-	Item::SharedArea area(new Item::Area);
+	Item::SharedArea area = std::make_shared<Item::Area>();
 	area->amx = amx;
 	area->areaId = areaId;
 	area->spectateMode = true;
@@ -356,10 +395,12 @@ cell AMX_NATIVE_CALL Natives::IsAnyPlayerInAnyDynamicArea(AMX *amx, cell *params
 cell AMX_NATIVE_CALL Natives::IsPointInDynamicArea(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(4);
+	const float x = amx_ctof(params[2]), y = amx_ctof(params[3]), z = amx_ctof(params[4]);
+	CHECK_POS_VEC3(x, y, z);
 	std::unordered_map<int, Item::SharedArea>::iterator a = core->getData()->areas.find(static_cast<int>(params[1]));
 	if (a != core->getData()->areas.end())
 	{
-		return Utility::isPointInArea(Eigen::Vector3f(amx_ctof(params[2]), amx_ctof(params[3]), amx_ctof(params[4])), a->second);
+		return Utility::isPointInArea(Eigen::Vector3f(x, y, z), a->second);
 	}
 	return 0;
 }
@@ -367,9 +408,11 @@ cell AMX_NATIVE_CALL Natives::IsPointInDynamicArea(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::IsPointInAnyDynamicArea(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(3);
+	const float x = amx_ctof(params[1]), y = amx_ctof(params[2]), z = amx_ctof(params[3]);
+	CHECK_POS_VEC3(x, y, z);
 	for (std::unordered_map<int, Item::SharedArea>::const_iterator a = core->getData()->areas.begin(); a != core->getData()->areas.end(); ++a)
 	{
-		if (Utility::isPointInArea(Eigen::Vector3f(amx_ctof(params[1]), amx_ctof(params[2]), amx_ctof(params[3])), a->second))
+		if (Utility::isPointInArea(Eigen::Vector3f(x, y, z), a->second))
 		{
 			return 1;
 		}
@@ -380,10 +423,14 @@ cell AMX_NATIVE_CALL Natives::IsPointInAnyDynamicArea(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::IsLineInDynamicArea(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(7);
+	const float x1 = amx_ctof(params[2]), y1 = amx_ctof(params[3]), z1 = amx_ctof(params[4]);
+	const float x2 = amx_ctof(params[5]), y2 = amx_ctof(params[6]), z2 = amx_ctof(params[7]);
+	CHECK_POS_VEC3(x1, y1, z1);
+	CHECK_POS_VEC3(x2, y2, z2);
 	std::unordered_map<int, Item::SharedArea>::iterator a = core->getData()->areas.find(static_cast<int>(params[1]));
 	if (a != core->getData()->areas.end())
 	{
-		return Utility::doesLineSegmentIntersectArea(Eigen::Vector3f(amx_ctof(params[2]), amx_ctof(params[3]), amx_ctof(params[4])), Eigen::Vector3f(amx_ctof(params[5]), amx_ctof(params[6]), amx_ctof(params[7])), a->second);
+		return Utility::doesLineSegmentIntersectArea(Eigen::Vector3f(x1, y1, z1), Eigen::Vector3f(x2, y2, z2), a->second);
 	}
 	return 0;
 }
@@ -391,9 +438,13 @@ cell AMX_NATIVE_CALL Natives::IsLineInDynamicArea(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::IsLineInAnyDynamicArea(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(6);
+	const float x1 = amx_ctof(params[1]), y1 = amx_ctof(params[2]), z1 = amx_ctof(params[3]);
+	const float x2 = amx_ctof(params[4]), y2 = amx_ctof(params[5]), z2 = amx_ctof(params[6]);
+	CHECK_POS_VEC3(x1, y1, z1);
+	CHECK_POS_VEC3(x2, y2, z2);
 	for (std::unordered_map<int, Item::SharedArea>::const_iterator a = core->getData()->areas.begin(); a != core->getData()->areas.end(); ++a)
 	{
-		if (Utility::doesLineSegmentIntersectArea(Eigen::Vector3f(amx_ctof(params[1]), amx_ctof(params[2]), amx_ctof(params[3])), Eigen::Vector3f(amx_ctof(params[4]), amx_ctof(params[5]), amx_ctof(params[6])), a->second))
+		if (Utility::doesLineSegmentIntersectArea(Eigen::Vector3f(x1, y1, z1), Eigen::Vector3f(x2, y2, z2), a->second))
 		{
 			return 1;
 		}
@@ -648,6 +699,8 @@ cell AMX_NATIVE_CALL Natives::GetNumberDynamicAreasForLine(AMX *amx, cell *param
 cell AMX_NATIVE_CALL Natives::AttachDynamicAreaToObject(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(7);
+	const float ox = amx_ctof(params[5]), oy = amx_ctof(params[6]), oz = amx_ctof(params[7]);
+	CHECK_POS_VEC3(ox, oy, oz);
 	std::unordered_map<int, Item::SharedArea>::iterator a = core->getData()->areas.find(static_cast<int>(params[1]));
 	if (a != core->getData()->areas.end())
 	{
@@ -681,6 +734,9 @@ cell AMX_NATIVE_CALL Natives::AttachDynamicAreaToObject(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::AttachDynamicAreaToPlayer(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(5);
+	const float ox = amx_ctof(params[3]), oy = amx_ctof(params[4]), oz = amx_ctof(params[5]);
+	CHECK_POS_VEC3(ox, oy, oz);
+	CHECK_PLAYER_ID_OR_ALL(static_cast<int>(params[2]));
 	std::unordered_map<int, Item::SharedArea>::iterator a = core->getData()->areas.find(static_cast<int>(params[1]));
 	if (a != core->getData()->areas.end())
 	{
@@ -714,6 +770,8 @@ cell AMX_NATIVE_CALL Natives::AttachDynamicAreaToPlayer(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::AttachDynamicAreaToVehicle(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(5);
+	const float ox = amx_ctof(params[3]), oy = amx_ctof(params[4]), oz = amx_ctof(params[5]);
+	CHECK_POS_VEC3(ox, oy, oz);
 	std::unordered_map<int, Item::SharedArea>::iterator a = core->getData()->areas.find(static_cast<int>(params[1]));
 	if (a != core->getData()->areas.end())
 	{

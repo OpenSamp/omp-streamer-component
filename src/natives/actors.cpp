@@ -23,22 +23,32 @@
 cell AMX_NATIVE_CALL Natives::CreateDynamicActor(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(13);
+	const int modelId = static_cast<int>(params[1]);
+	const float px = amx_ctof(params[2]), py = amx_ctof(params[3]), pz = amx_ctof(params[4]);
+	const float rot = amx_ctof(params[5]);
+	const float health = amx_ctof(params[7]);
+	const float streamDist = amx_ctof(params[11]);
+	CHECK_MODEL_ID(modelId);
+	CHECK_POS_VEC3(px, py, pz);
+	CHECK_FINITE(rot, "rotation");
+	CHECK_FINITE(health, "health");
+	CHECK_STREAM_DISTANCE(streamDist);
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_ACTOR) == core->getData()->actors.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int actorId = Item::Actor::identifier.get();
-	Item::SharedActor actor(new Item::Actor);
+	Item::SharedActor actor = std::make_shared<Item::Actor>();
 	actor->amx = amx;
 	actor->actorId = actorId;
 	actor->inverseAreaChecking = false;
 	actor->originalComparableStreamDistance = -1.0f;
 	actor->positionOffset = Eigen::Vector3f::Zero();
-	actor->modelId = static_cast<int>(params[1]);
-	actor->position = Eigen::Vector3f(amx_ctof(params[2]), amx_ctof(params[3]), amx_ctof(params[4]));
-	actor->rotation = amx_ctof(params[5]);
+	actor->modelId = modelId;
+	actor->position = Eigen::Vector3f(px, py, pz);
+	actor->rotation = rot;
 	actor->invulnerable = static_cast<int>(params[6]) != 0;
-	actor->health = amx_ctof(params[7]);
+	actor->health = health;
 	Utility::addToContainer(actor->worlds, static_cast<int>(params[8]));
 	if (actor->worlds.empty())
 	{
@@ -46,8 +56,8 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicActor(AMX *amx, cell *params)
 	}
 	Utility::addToContainer(actor->interiors, static_cast<int>(params[9]));
 	Utility::addToContainer(actor->players, static_cast<int>(params[10]));
-	actor->comparableStreamDistance = amx_ctof(params[11]) < STREAMER_STATIC_DISTANCE_CUTOFF ? amx_ctof(params[11]) : amx_ctof(params[11]) * amx_ctof(params[11]);
-	actor->streamDistance = amx_ctof(params[11]);
+	actor->comparableStreamDistance = streamDist < STREAMER_STATIC_DISTANCE_CUTOFF ? streamDist : streamDist * streamDist;
+	actor->streamDistance = streamDist;
 	Utility::addToContainer(actor->areas, static_cast<int>(params[12]));
 	actor->priority = static_cast<int>(params[13]);
 	core->getGrid()->addActor(actor);
@@ -222,10 +232,12 @@ cell AMX_NATIVE_CALL Natives::GetDynamicActorFacingAngle(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::SetDynamicActorFacingAngle(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(2);
+	const float rot = amx_ctof(params[2]);
+	CHECK_FINITE(rot, "rotation");
 	std::unordered_map<int, Item::SharedActor>::iterator a = core->getData()->actors.find(static_cast<int>(params[1]));
 	if (a != core->getData()->actors.end())
 	{
-		a->second->rotation = amx_ctof(params[2]);
+		a->second->rotation = rot;
 
 		for (std::unordered_set<int>::const_iterator w = a->second->worlds.begin(); w != a->second->worlds.end(); ++w)
 		{
@@ -265,12 +277,14 @@ cell AMX_NATIVE_CALL Natives::GetDynamicActorPos(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::SetDynamicActorPos(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(4);
+	const float px = amx_ctof(params[2]), py = amx_ctof(params[3]), pz = amx_ctof(params[4]);
+	CHECK_POS_VEC3(px, py, pz);
 	std::unordered_map<int, Item::SharedActor>::iterator a = core->getData()->actors.find(static_cast<int>(params[1]));
 	if (a != core->getData()->actors.end())
 	{
-		a->second->position[0] = amx_ctof(params[2]);
-		a->second->position[1] = amx_ctof(params[3]);
-		a->second->position[2] = amx_ctof(params[4]);
+		a->second->position[0] = px;
+		a->second->position[1] = py;
+		a->second->position[2] = pz;
 
 		for (std::unordered_set<int>::const_iterator w = a->second->worlds.begin(); w != a->second->worlds.end(); ++w)
 		{
@@ -302,11 +316,13 @@ cell AMX_NATIVE_CALL Natives::GetDynamicActorHealth(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::SetDynamicActorHealth(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(2);
+	const float health = amx_ctof(params[2]);
+	CHECK_FINITE(health, "health");
 	int actorId = static_cast<int>(params[1]);
 	std::unordered_map<int, Item::SharedActor>::iterator a = core->getData()->actors.find(actorId);
 	if (a != core->getData()->actors.end())
 	{
-		a->second->health = amx_ctof(params[2]);
+		a->second->health = health;
 
 		for (std::unordered_set<int>::const_iterator w = a->second->worlds.begin(); w != a->second->worlds.end(); ++w)
 		{

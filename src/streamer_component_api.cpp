@@ -63,7 +63,7 @@ int IStreamerComponent_createObject(
 		return INVALID_STREAMER_ID;
 	}
 	int objectId = Item::Object::identifier.get();
-	Item::SharedObject object(new Item::Object);
+	Item::SharedObject object = std::make_shared<Item::Object>();
 	object->amx = nullptr;
 	object->objectId = objectId;
 	object->inverseAreaChecking = false;
@@ -303,7 +303,7 @@ int IStreamerComponent_createPickup(int modelId, int type,
 		return INVALID_STREAMER_ID;
 	}
 	int pickupId = Item::Pickup::identifier.get();
-	Item::SharedPickup pickup(new Item::Pickup);
+	Item::SharedPickup pickup = std::make_shared<Item::Pickup>();
 	pickup->amx = nullptr;
 	pickup->pickupId = pickupId;
 	pickup->inverseAreaChecking = false;
@@ -353,7 +353,7 @@ int IStreamerComponent_createTextLabel(const char *text, uint32_t color,
 		return INVALID_STREAMER_ID;
 	}
 	int labelId = Item::TextLabel::identifier.get();
-	Item::SharedTextLabel label(new Item::TextLabel);
+	Item::SharedTextLabel label = std::make_shared<Item::TextLabel>();
 	label->amx = nullptr;
 	label->textLabelId = labelId;
 	label->inverseAreaChecking = false;
@@ -431,7 +431,7 @@ int IStreamerComponent_createMapIcon(float posX, float posY, float posZ,
 		return INVALID_STREAMER_ID;
 	}
 	int iconId = Item::MapIcon::identifier.get();
-	Item::SharedMapIcon icon(new Item::MapIcon);
+	Item::SharedMapIcon icon = std::make_shared<Item::MapIcon>();
 	icon->amx = nullptr;
 	icon->mapIconId = iconId;
 	icon->inverseAreaChecking = false;
@@ -479,7 +479,7 @@ int IStreamerComponent_createCheckpoint(float posX, float posY, float posZ, floa
 		return INVALID_STREAMER_ID;
 	}
 	int cpId = Item::Checkpoint::identifier.get();
-	Item::SharedCheckpoint cp(new Item::Checkpoint);
+	Item::SharedCheckpoint cp = std::make_shared<Item::Checkpoint>();
 	cp->amx = nullptr;
 	cp->checkpointId = cpId;
 	cp->inverseAreaChecking = false;
@@ -584,7 +584,7 @@ int IStreamerComponent_createActor(int modelId, float x, float y, float z, float
 		return INVALID_STREAMER_ID;
 	}
 	int actorId = Item::Actor::identifier.get();
-	Item::SharedActor actor(new Item::Actor);
+	Item::SharedActor actor = std::make_shared<Item::Actor>();
 	actor->amx = nullptr;
 	actor->actorId = actorId;
 	actor->inverseAreaChecking = false;

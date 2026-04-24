@@ -23,21 +23,33 @@
 cell AMX_NATIVE_CALL Natives::CreateDynamicPickup(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(11);
+	const int modelId = static_cast<int>(params[1]);
+	const int pickupType = static_cast<int>(params[2]);
+	const float px = amx_ctof(params[3]), py = amx_ctof(params[4]), pz = amx_ctof(params[5]);
+	const float streamDist = amx_ctof(params[9]);
+	CHECK_MODEL_ID(modelId);
+	CHECK_POS_VEC3(px, py, pz);
+	CHECK_STREAM_DISTANCE(streamDist);
+	if (pickupType < 0 || pickupType > 22)
+	{
+		Utility::logError("CreateDynamicPickup: pickup type %d out of range [0, 22].", pickupType);
+		return 0;
+	}
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_PICKUP) == core->getData()->pickups.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int pickupId = Item::Pickup::identifier.get();
-	Item::SharedPickup pickup(new Item::Pickup);
+	Item::SharedPickup pickup = std::make_shared<Item::Pickup>();
 	pickup->amx = amx;
 	pickup->pickupId = pickupId;
 	pickup->inverseAreaChecking = false;
 	pickup->originalComparableStreamDistance = -1.0f;
 	pickup->positionOffset = Eigen::Vector3f::Zero();
 	pickup->streamCallbacks = false;
-	pickup->modelId = static_cast<int>(params[1]);
-	pickup->type = static_cast<int>(params[2]);
-	pickup->position = Eigen::Vector3f(amx_ctof(params[3]), amx_ctof(params[4]), amx_ctof(params[5]));
+	pickup->modelId = modelId;
+	pickup->type = pickupType;
+	pickup->position = Eigen::Vector3f(px, py, pz);
 	Utility::addToContainer(pickup->worlds, static_cast<int>(params[6]));
 	if (pickup->worlds.empty())
 	{

@@ -23,26 +23,36 @@
 cell AMX_NATIVE_CALL Natives::CreateDynamicMapIcon(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(12);
+	const float px = amx_ctof(params[1]), py = amx_ctof(params[2]), pz = amx_ctof(params[3]);
+	const int iconType = static_cast<int>(params[4]);
+	const float streamDist = amx_ctof(params[9]);
+	CHECK_POS_VEC3(px, py, pz);
+	CHECK_STREAM_DISTANCE(streamDist);
+	if (iconType < 0 || iconType > 255)
+	{
+		Utility::logError("CreateDynamicMapIcon: icon type %d out of range [0, 255].", iconType);
+		return 0;
+	}
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_MAP_ICON) == core->getData()->mapIcons.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int mapIconId = Item::MapIcon::identifier.get();
-	Item::SharedMapIcon mapIcon(new Item::MapIcon);
+	Item::SharedMapIcon mapIcon = std::make_shared<Item::MapIcon>();
 	mapIcon->amx = amx;
 	mapIcon->mapIconId = mapIconId;
 	mapIcon->inverseAreaChecking = false;
 	mapIcon->originalComparableStreamDistance = -1.0f;
 	mapIcon->positionOffset = Eigen::Vector3f::Zero();
 	mapIcon->streamCallbacks = false;
-	mapIcon->position = Eigen::Vector3f(amx_ctof(params[1]), amx_ctof(params[2]), amx_ctof(params[3]));
-	mapIcon->type = static_cast<int>(params[4]);
+	mapIcon->position = Eigen::Vector3f(px, py, pz);
+	mapIcon->type = iconType;
 	mapIcon->color = static_cast<int>(params[5]);
 	Utility::addToContainer(mapIcon->worlds, static_cast<int>(params[6]));
 	Utility::addToContainer(mapIcon->interiors, static_cast<int>(params[7]));
 	Utility::addToContainer(mapIcon->players, static_cast<int>(params[8]));
-	mapIcon->comparableStreamDistance = amx_ctof(params[9]) < STREAMER_STATIC_DISTANCE_CUTOFF ? amx_ctof(params[9]) : amx_ctof(params[9]) * amx_ctof(params[9]);
-	mapIcon->streamDistance = amx_ctof(params[9]);
+	mapIcon->comparableStreamDistance = streamDist < STREAMER_STATIC_DISTANCE_CUTOFF ? streamDist : streamDist * streamDist;
+	mapIcon->streamDistance = streamDist;
 	mapIcon->style = static_cast<int>(params[10]);
 	Utility::addToContainer(mapIcon->areas, static_cast<int>(params[11]));
 	mapIcon->priority = static_cast<int>(params[12]);

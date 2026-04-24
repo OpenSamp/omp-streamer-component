@@ -23,12 +23,22 @@
 cell AMX_NATIVE_CALL Natives::CreateDynamicObject(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(14);
+	const int modelId = static_cast<int>(params[1]);
+	const float px = amx_ctof(params[2]), py = amx_ctof(params[3]), pz = amx_ctof(params[4]);
+	const float rx = amx_ctof(params[5]), ry = amx_ctof(params[6]), rz = amx_ctof(params[7]);
+	const float streamDist = amx_ctof(params[11]);
+	const float drawDist = amx_ctof(params[12]);
+	CHECK_MODEL_ID(modelId);
+	CHECK_POS_VEC3(px, py, pz);
+	CHECK_ROT_VEC3(rx, ry, rz);
+	CHECK_STREAM_DISTANCE(streamDist);
+	CHECK_DRAW_DISTANCE(drawDist);
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_OBJECT) == core->getData()->objects.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int objectId = Item::Object::identifier.get();
-	Item::SharedObject object(new Item::Object);
+	Item::SharedObject object = std::make_shared<Item::Object>();
 	object->amx = amx;
 	object->objectId = objectId;
 	object->inverseAreaChecking = false;
@@ -36,15 +46,15 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicObject(AMX *amx, cell *params)
 	object->originalComparableStreamDistance = -1.0f;
 	object->positionOffset = Eigen::Vector3f::Zero();
 	object->streamCallbacks = false;
-	object->modelId = static_cast<int>(params[1]);
-	object->position = Eigen::Vector3f(amx_ctof(params[2]), amx_ctof(params[3]), amx_ctof(params[4]));
-	object->rotation = Eigen::Vector3f(amx_ctof(params[5]), amx_ctof(params[6]), amx_ctof(params[7]));
+	object->modelId = modelId;
+	object->position = Eigen::Vector3f(px, py, pz);
+	object->rotation = Eigen::Vector3f(rx, ry, rz);
 	Utility::addToContainer(object->worlds, static_cast<int>(params[8]));
 	Utility::addToContainer(object->interiors, static_cast<int>(params[9]));
 	Utility::addToContainer(object->players, static_cast<int>(params[10]));
-	object->comparableStreamDistance = amx_ctof(params[11]) < STREAMER_STATIC_DISTANCE_CUTOFF ? amx_ctof(params[11]) : amx_ctof(params[11]) * amx_ctof(params[11]);
-	object->streamDistance = amx_ctof(params[11]);
-	object->drawDistance = amx_ctof(params[12]);
+	object->comparableStreamDistance = streamDist < STREAMER_STATIC_DISTANCE_CUTOFF ? streamDist : streamDist * streamDist;
+	object->streamDistance = streamDist;
+	object->drawDistance = drawDist;
 	Utility::addToContainer(object->areas, static_cast<int>(params[13]));
 	object->priority = static_cast<int>(params[14]);
 	core->getGrid()->addObject(object);
@@ -96,11 +106,13 @@ cell AMX_NATIVE_CALL Natives::GetDynamicObjectPos(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::SetDynamicObjectPos(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(4);
+	const float nx = amx_ctof(params[2]), ny = amx_ctof(params[3]), nz = amx_ctof(params[4]);
+	CHECK_POS_VEC3(nx, ny, nz);
 	std::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(static_cast<int>(params[1]));
 	if (o != core->getData()->objects.end())
 	{
 		Eigen::Vector3f position = o->second->position;
-		o->second->position = Eigen::Vector3f(amx_ctof(params[2]), amx_ctof(params[3]), amx_ctof(params[4]));
+		o->second->position = Eigen::Vector3f(nx, ny, nz);
 		for (std::unordered_map<int, Player>::iterator p = core->getData()->players.begin(); p != core->getData()->players.end(); ++p)
 		{
 			std::unordered_map<int, int>::iterator i = p->second.internalObjects.find(o->first);
@@ -154,10 +166,12 @@ cell AMX_NATIVE_CALL Natives::GetDynamicObjectRot(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::SetDynamicObjectRot(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(4);
+	const float rx = amx_ctof(params[2]), ry = amx_ctof(params[3]), rz = amx_ctof(params[4]);
+	CHECK_ROT_VEC3(rx, ry, rz);
 	std::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(static_cast<int>(params[1]));
 	if (o != core->getData()->objects.end())
 	{
-		o->second->rotation = Eigen::Vector3f(amx_ctof(params[2]), amx_ctof(params[3]), amx_ctof(params[4]));
+		o->second->rotation = Eigen::Vector3f(rx, ry, rz);
 		for (std::unordered_map<int, Player>::iterator p = core->getData()->players.begin(); p != core->getData()->players.end(); ++p)
 		{
 			std::unordered_map<int, int>::iterator i = p->second.internalObjects.find(o->first);
@@ -213,8 +227,14 @@ cell AMX_NATIVE_CALL Natives::SetDynamicObjectNoCameraCol(AMX *amx, cell *params
 cell AMX_NATIVE_CALL Natives::MoveDynamicObject(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(8);
-	if (!amx_ctof(params[5]))
+	const float tx = amx_ctof(params[2]), ty = amx_ctof(params[3]), tz = amx_ctof(params[4]);
+	const float speed = amx_ctof(params[5]);
+	const float rx = amx_ctof(params[6]), ry = amx_ctof(params[7]), rz = amx_ctof(params[8]);
+	CHECK_POS_VEC3(tx, ty, tz);
+	CHECK_ROT_VEC3(rx, ry, rz);
+	if (!Validation::isFinitef(speed) || speed <= 0.0f || speed > Validation::kMaxRadius)
 	{
+		Utility::logError("MoveDynamicObject: invalid speed %f.", speed);
 		return 0;
 	}
 	std::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(static_cast<int>(params[1]));
@@ -225,10 +245,16 @@ cell AMX_NATIVE_CALL Natives::MoveDynamicObject(AMX *amx, cell *params)
 			Utility::logError("MoveDynamicObject: Object is currently attached and cannot be moved.");
 			return 0;
 		}
-		Eigen::Vector3f position(amx_ctof(params[2]), amx_ctof(params[3]), amx_ctof(params[4]));
-		Eigen::Vector3f rotation(amx_ctof(params[6]), amx_ctof(params[7]), amx_ctof(params[8]));
+		Eigen::Vector3f position(tx, ty, tz);
+		Eigen::Vector3f rotation(rx, ry, rz);
 		o->second->move = std::make_shared<Item::Object::Move>();
-		o->second->move->duration = static_cast<int>((static_cast<float>(boost::geometry::distance(position, o->second->position) / amx_ctof(params[5])) * 1000.0f));
+		o->second->move->duration = static_cast<int>((static_cast<float>(boost::geometry::distance(position, o->second->position) / speed) * 1000.0f));
+		if (o->second->move->duration <= 0)
+		{
+			// Target is the current position or speed is too high to avoid division issues; bail safely.
+			o->second->move.reset();
+			return 0;
+		}
 		std::get<0>(o->second->move->position) = position;
 		std::get<1>(o->second->move->position) = o->second->position;
 		std::get<2>(o->second->move->position) = (position - o->second->position) / static_cast<float>(o->second->move->duration);
@@ -238,7 +264,7 @@ cell AMX_NATIVE_CALL Natives::MoveDynamicObject(AMX *amx, cell *params)
 			std::get<1>(o->second->move->rotation) = o->second->rotation;
 			std::get<2>(o->second->move->rotation) = (rotation - o->second->rotation) / static_cast<float>(o->second->move->duration);
 		}
-		o->second->move->speed = amx_ctof(params[5]);
+		o->second->move->speed = speed;
 		o->second->move->time = std::chrono::steady_clock::now();
 		for (std::unordered_map<int, Player>::iterator p = core->getData()->players.begin(); p != core->getData()->players.end(); ++p)
 		{
@@ -331,6 +357,41 @@ cell AMX_NATIVE_CALL Natives::AttachCameraToDynamicObject(AMX *amx, cell *params
 cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToObject(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(9);
+	const int childId = static_cast<int>(params[1]);
+	const int parentId = static_cast<int>(params[2]);
+	const float ox = amx_ctof(params[3]), oy = amx_ctof(params[4]), oz = amx_ctof(params[5]);
+	const float rx = amx_ctof(params[6]), ry = amx_ctof(params[7]), rz = amx_ctof(params[8]);
+	CHECK_POS_VEC3(ox, oy, oz);
+	CHECK_ROT_VEC3(rx, ry, rz);
+	if (childId == parentId && parentId != INVALID_STREAMER_ID)
+	{
+		Utility::logError("AttachDynamicObjectToObject: cannot attach an object to itself (id %d).", childId);
+		return 0;
+	}
+	// Walk the attachment chain to reject cycles (A->B->A etc).
+	if (parentId != INVALID_STREAMER_ID)
+	{
+		int cursor = parentId;
+		int hops = 0;
+		while (cursor != INVALID_STREAMER_ID && hops < 64)
+		{
+			if (cursor == childId)
+			{
+				Utility::logError("AttachDynamicObjectToObject: attachment cycle detected (child=%d parent=%d).", childId, parentId);
+				return 0;
+			}
+			auto it = core->getData()->objects.find(cursor);
+			if (it == core->getData()->objects.end() || !it->second->attach)
+				break;
+			cursor = it->second->attach->object;
+			++hops;
+		}
+		if (hops >= 64)
+		{
+			Utility::logError("AttachDynamicObjectToObject: attachment chain too deep (child=%d).", childId);
+			return 0;
+		}
+	}
 	static AMX_NATIVE native = StreamerApi::FindNative("AttachPlayerObjectToObject");
 	if (native == NULL)
 	{
@@ -409,6 +470,11 @@ cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToObject(AMX *amx, cell *params
 cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToPlayer(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(8);
+	const float ox = amx_ctof(params[3]), oy = amx_ctof(params[4]), oz = amx_ctof(params[5]);
+	const float rx = amx_ctof(params[6]), ry = amx_ctof(params[7]), rz = amx_ctof(params[8]);
+	CHECK_POS_VEC3(ox, oy, oz);
+	CHECK_ROT_VEC3(rx, ry, rz);
+	CHECK_PLAYER_ID_OR_ALL(static_cast<int>(params[2]));
 	static AMX_NATIVE native = StreamerApi::FindNative("AttachPlayerObjectToPlayer");
 	if (native == NULL)
 	{
@@ -469,6 +535,10 @@ cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToPlayer(AMX *amx, cell *params
 cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToVehicle(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(8);
+	const float ox = amx_ctof(params[3]), oy = amx_ctof(params[4]), oz = amx_ctof(params[5]);
+	const float rx = amx_ctof(params[6]), ry = amx_ctof(params[7]), rz = amx_ctof(params[8]);
+	CHECK_POS_VEC3(ox, oy, oz);
+	CHECK_ROT_VEC3(rx, ry, rz);
 	std::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(static_cast<int>(params[1]));
 	if (o != core->getData()->objects.end())
 	{
@@ -628,10 +698,21 @@ cell AMX_NATIVE_CALL Natives::GetDynamicObjectMaterial(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::SetDynamicObjectMaterial(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(6);
+	const int materialModel = static_cast<int>(params[3]);
+	if (!Validation::isModelId(materialModel))
+	{
+		Utility::logError("SetDynamicObjectMaterial: invalid material model id %d.", materialModel);
+		return 0;
+	}
 	std::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(static_cast<int>(params[1]));
 	if (o != core->getData()->objects.end())
 	{
 		int index = static_cast<int>(params[2]);
+		if (index < 0 || index > 32)
+		{
+			Utility::logError("SetDynamicObjectMaterial: material index %d out of range [0, 32].", index);
+			return 0;
+		}
 		o->second->materials[index].main = std::make_shared<Item::Object::Material::Main>();
 		o->second->materials[index].main->modelId = static_cast<int>(params[3]);
 		o->second->materials[index].main->txdFileName = Utility::convertNativeStringToString(amx, params[4]);
@@ -730,6 +811,11 @@ cell AMX_NATIVE_CALL Natives::SetDynamicObjectMaterialText(AMX *amx, cell *param
 	if (o != core->getData()->objects.end())
 	{
 		int index = static_cast<int>(params[2]);
+		if (index < 0 || index > 32)
+		{
+			Utility::logError("SetDynamicObjectMaterialText: material index %d out of range [0, 32].", index);
+			return 0;
+		}
 		o->second->materials[index].text = std::make_shared<Item::Object::Material::Text>();
 		o->second->materials[index].text->materialText = Utility::convertNativeStringToString(amx, params[3]);
 		o->second->materials[index].text->materialSize = static_cast<int>(params[4]);

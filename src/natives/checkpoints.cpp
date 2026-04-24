@@ -23,25 +23,31 @@
 cell AMX_NATIVE_CALL Natives::CreateDynamicCP(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(10);
+	const float px = amx_ctof(params[1]), py = amx_ctof(params[2]), pz = amx_ctof(params[3]);
+	const float size = amx_ctof(params[4]);
+	const float streamDist = amx_ctof(params[8]);
+	CHECK_POS_VEC3(px, py, pz);
+	CHECK_RADIUS(size);
+	CHECK_STREAM_DISTANCE(streamDist);
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_CP) == core->getData()->checkpoints.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int checkpointId = Item::Checkpoint::identifier.get();
-	Item::SharedCheckpoint checkpoint(new Item::Checkpoint);
+	Item::SharedCheckpoint checkpoint = std::make_shared<Item::Checkpoint>();
 	checkpoint->amx = amx;
 	checkpoint->checkpointId = checkpointId;
 	checkpoint->inverseAreaChecking = false;
 	checkpoint->originalComparableStreamDistance = -1.0f;
 	checkpoint->positionOffset = Eigen::Vector3f::Zero();
 	checkpoint->streamCallbacks = false;
-	checkpoint->position = Eigen::Vector3f(amx_ctof(params[1]), amx_ctof(params[2]), amx_ctof(params[3]));
-	checkpoint->size = amx_ctof(params[4]);
+	checkpoint->position = Eigen::Vector3f(px, py, pz);
+	checkpoint->size = size;
 	Utility::addToContainer(checkpoint->worlds, static_cast<int>(params[5]));
 	Utility::addToContainer(checkpoint->interiors, static_cast<int>(params[6]));
 	Utility::addToContainer(checkpoint->players, static_cast<int>(params[7]));
-	checkpoint->comparableStreamDistance = amx_ctof(params[8]) < STREAMER_STATIC_DISTANCE_CUTOFF ? amx_ctof(params[8]) : amx_ctof(params[8]) * amx_ctof(params[8]);
-	checkpoint->streamDistance = amx_ctof(params[8]);
+	checkpoint->comparableStreamDistance = streamDist < STREAMER_STATIC_DISTANCE_CUTOFF ? streamDist : streamDist * streamDist;
+	checkpoint->streamDistance = streamDist;
 	Utility::addToContainer(checkpoint->areas, static_cast<int>(params[9]));
 	checkpoint->priority = static_cast<int>(params[10]);
 	core->getGrid()->addCheckpoint(checkpoint);

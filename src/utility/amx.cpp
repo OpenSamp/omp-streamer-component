@@ -293,10 +293,27 @@ void Utility::convertArrayToPolygon(AMX *amx, cell input, cell size, Polygon2d &
 {
 	cell *array = NULL;
 	std::vector<Eigen::Vector2f> points;
-	amx_GetAddr(amx, input, &array);
+	if (amx_GetAddr(amx, input, &array) != AMX_ERR_NONE || array == NULL)
+	{
+		Utility::logError("convertArrayToPolygon: failed to resolve AMX address.");
+		return;
+	}
+	if (!Validation::isPolygonArraySize(static_cast<int>(size)))
+	{
+		Utility::logError("convertArrayToPolygon: array size %d invalid.", static_cast<int>(size));
+		return;
+	}
+	points.reserve(static_cast<std::size_t>(size) / 2);
 	for (std::size_t i = 0; i < static_cast<std::size_t>(size); i += 2)
 	{
-		points.push_back(Eigen::Vector2f(amx_ctof(array[i]), amx_ctof(array[i + 1])));
+		const float x = amx_ctof(array[i]);
+		const float y = amx_ctof(array[i + 1]);
+		if (!Validation::isCoordInRange(x) || !Validation::isCoordInRange(y))
+		{
+			Utility::logError("convertArrayToPolygon: point %zu has NaN/Inf/out-of-range coord.", i / 2);
+			return;
+		}
+		points.push_back(Eigen::Vector2f(x, y));
 	}
 	boost::geometry::assign_points(polygon, points);
 	boost::geometry::correct(polygon);
@@ -323,14 +340,42 @@ std::string Utility::convertNativeStringToString(AMX *amx, cell input)
 {
 	char *string = NULL;
 	amx_StrParam(amx, input, string);
-	return string ? string : "";
+	if (!string)
+	{
+		return std::string();
+	}
+	// Cap inbound strings; anything beyond this is either an attack payload or a bug.
+	// The SA-MP client can be wedged by absurdly long strings on 3D text labels and
+	// chat messages — clamp here so the rest of the pipeline is safe.
+	const std::size_t maxLen = Validation::kMaxNativeStringLen;
+	const std::size_t actual = std::strlen(string);
+	if (actual > maxLen)
+	{
+		Utility::logError("convertNativeStringToString: truncating oversized string (%zu > %zu bytes).", actual, maxLen);
+		return std::string(string, maxLen);
+	}
+	return std::string(string, actual);
 }
 
 void Utility::convertStringToNativeString(AMX *amx, cell output, cell size, std::string string)
 {
 	cell *address = NULL;
-	amx_GetAddr(amx, output, &address);
-	amx_SetString(address, string.c_str(), 0, 0, static_cast<size_t>(size));
+	if (amx_GetAddr(amx, output, &address) != AMX_ERR_NONE || address == NULL)
+	{
+		return;
+	}
+	if (size <= 0)
+	{
+		return;
+	}
+	// amx_SetString takes size_t; a negative cell would wrap into a huge value and
+	// cause an OOB write into the script's buffer. Clamp defensively.
+	std::size_t cappedSize = static_cast<std::size_t>(size);
+	if (cappedSize > Validation::kMaxNativeStringLen)
+	{
+		cappedSize = Validation::kMaxNativeStringLen;
+	}
+	amx_SetString(address, string.c_str(), 0, 0, cappedSize);
 }
 
 void Utility::storeFloatInNative(AMX *amx, cell output, float value)

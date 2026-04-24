@@ -23,12 +23,30 @@
 cell AMX_NATIVE_CALL Natives::CreateDynamic3DTextLabel(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(15);
+	const float px = amx_ctof(params[3]), py = amx_ctof(params[4]), pz = amx_ctof(params[5]);
+	const float drawDist = amx_ctof(params[6]);
+	const float streamDist = amx_ctof(params[13]);
+	// For attached labels (player/vehicle) the position is an offset; skip the
+	// out-of-range check for those.
+	const bool attached = static_cast<int>(params[7]) != INVALID_PLAYER_ID || static_cast<int>(params[8]) != INVALID_VEHICLE_ID;
+	if (!attached)
+	{
+		CHECK_POS_VEC3(px, py, pz);
+	}
+	else
+	{
+		CHECK_FINITE(px, "position x");
+		CHECK_FINITE(py, "position y");
+		CHECK_FINITE(pz, "position z");
+	}
+	CHECK_DRAW_DISTANCE(drawDist);
+	CHECK_STREAM_DISTANCE(streamDist);
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_3D_TEXT_LABEL) == core->getData()->textLabels.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int textLabelId = Item::TextLabel::identifier.get();
-	Item::SharedTextLabel textLabel(new Item::TextLabel);
+	Item::SharedTextLabel textLabel = std::make_shared<Item::TextLabel>();
 	textLabel->amx = amx;
 	textLabel->textLabelId = textLabelId;
 	textLabel->inverseAreaChecking = false;
@@ -37,8 +55,8 @@ cell AMX_NATIVE_CALL Natives::CreateDynamic3DTextLabel(AMX *amx, cell *params)
 	textLabel->streamCallbacks = false;
 	textLabel->text = Utility::convertNativeStringToString(amx, params[1]);
 	textLabel->color = static_cast<int>(params[2]);
-	textLabel->position = Eigen::Vector3f(amx_ctof(params[3]), amx_ctof(params[4]), amx_ctof(params[5]));
-	textLabel->drawDistance = amx_ctof(params[6]);
+	textLabel->position = Eigen::Vector3f(px, py, pz);
+	textLabel->drawDistance = drawDist;
 	if (static_cast<int>(params[7]) != INVALID_PLAYER_ID || static_cast<int>(params[8]) != INVALID_VEHICLE_ID)
 	{
 		textLabel->attach = std::make_shared<Item::TextLabel::Attach>();
@@ -54,8 +72,8 @@ cell AMX_NATIVE_CALL Natives::CreateDynamic3DTextLabel(AMX *amx, cell *params)
 	Utility::addToContainer(textLabel->worlds, static_cast<int>(params[10]));
 	Utility::addToContainer(textLabel->interiors, static_cast<int>(params[11]));
 	Utility::addToContainer(textLabel->players, static_cast<int>(params[12]));
-	textLabel->comparableStreamDistance = amx_ctof(params[13]) < STREAMER_STATIC_DISTANCE_CUTOFF ? amx_ctof(params[13]) : amx_ctof(params[13]) * amx_ctof(params[13]);
-	textLabel->streamDistance = amx_ctof(params[13]);
+	textLabel->comparableStreamDistance = streamDist < STREAMER_STATIC_DISTANCE_CUTOFF ? streamDist : streamDist * streamDist;
+	textLabel->streamDistance = streamDist;
 	Utility::addToContainer(textLabel->areas, static_cast<int>(params[14]));
 	textLabel->priority = static_cast<int>(params[15]);
 	core->getGrid()->addTextLabel(textLabel);
@@ -92,9 +110,7 @@ cell AMX_NATIVE_CALL Natives::GetDynamic3DTextLabelText(AMX *amx, cell *params)
 	std::unordered_map<int, Item::SharedTextLabel>::iterator t = core->getData()->textLabels.find(static_cast<int>(params[1]));
 	if (t != core->getData()->textLabels.end())
 	{
-		cell *text = NULL;
-		amx_GetAddr(amx, params[2], &text);
-		amx_SetString(text, t->second->text.c_str(), 0, 0, static_cast<size_t>(params[3]));
+		Utility::convertStringToNativeString(amx, params[2], params[3], t->second->text);
 		return 1;
 	}
 	return 0;

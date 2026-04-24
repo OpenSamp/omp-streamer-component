@@ -136,10 +136,26 @@ namespace
 
 		void onReady() override { }
 
-		void onFree(IComponent * /*component*/) override { }
+		// Called when another component is about to be freed. We must drop references to
+		// it immediately: by the time our own free() runs, the teardown order isn't
+		// guaranteed and the vtable of an already-freed component is zeroed, so calling
+		// through `foo_->getEventDispatcher()` would crash (execute at 0x0).
+		void onFree(IComponent *component) override
+		{
+			if (component == pawn_)         pawn_ = nullptr;
+			else if (component == vehicles_)    vehicles_ = nullptr;
+			else if (component == objects_)     objects_ = nullptr;
+			else if (component == pickups_)     pickups_ = nullptr;
+			else if (component == actors_)      actors_ = nullptr;
+			else if (component == checkpoints_) checkpoints_ = nullptr;
+			else if (component == classes_)     classes_ = nullptr;
+		}
 
 		void free() override
 		{
+			// By this point any component listed in onFree has been nulled out. We only
+			// touch pointers still alive here — safer than blanket teardown which used to
+			// dereference zombie components and crash at shutdown.
 			if (core_)
 			{
 				core_->getPlayers().getPlayerChangeDispatcher().removeEventHandler(this);

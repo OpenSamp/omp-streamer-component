@@ -24,12 +24,22 @@
 cell AMX_NATIVE_CALL Natives::CreateDynamicObjectEx(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(18);
+	const int modelId = static_cast<int>(params[1]);
+	const float px = amx_ctof(params[2]), py = amx_ctof(params[3]), pz = amx_ctof(params[4]);
+	const float rx = amx_ctof(params[5]), ry = amx_ctof(params[6]), rz = amx_ctof(params[7]);
+	const float streamDist = amx_ctof(params[8]);
+	const float drawDist = amx_ctof(params[9]);
+	CHECK_MODEL_ID(modelId);
+	CHECK_POS_VEC3(px, py, pz);
+	CHECK_ROT_VEC3(rx, ry, rz);
+	CHECK_STREAM_DISTANCE(streamDist);
+	CHECK_DRAW_DISTANCE(drawDist);
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_OBJECT) == core->getData()->objects.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int objectId = Item::Object::identifier.get();
-	Item::SharedObject object(new Item::Object);
+	Item::SharedObject object = std::make_shared<Item::Object>();
 	object->amx = amx;
 	object->objectId = objectId;
 	object->inverseAreaChecking = false;
@@ -37,12 +47,12 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicObjectEx(AMX *amx, cell *params)
 	object->originalComparableStreamDistance = -1.0f;
 	object->positionOffset = Eigen::Vector3f::Zero();
 	object->streamCallbacks = false;
-	object->modelId = static_cast<int>(params[1]);
-	object->position = Eigen::Vector3f(amx_ctof(params[2]), amx_ctof(params[3]), amx_ctof(params[4]));
-	object->rotation = Eigen::Vector3f(amx_ctof(params[5]), amx_ctof(params[6]), amx_ctof(params[7]));
-	object->comparableStreamDistance = amx_ctof(params[8]) < STREAMER_STATIC_DISTANCE_CUTOFF ? amx_ctof(params[8]) : amx_ctof(params[8]) * amx_ctof(params[8]);
-	object->streamDistance = amx_ctof(params[8]);
-	object->drawDistance = amx_ctof(params[9]);
+	object->modelId = modelId;
+	object->position = Eigen::Vector3f(px, py, pz);
+	object->rotation = Eigen::Vector3f(rx, ry, rz);
+	object->comparableStreamDistance = streamDist < STREAMER_STATIC_DISTANCE_CUTOFF ? streamDist : streamDist * streamDist;
+	object->streamDistance = streamDist;
+	object->drawDistance = drawDist;
 	Utility::convertArrayToContainer(amx, params[10], params[15], object->worlds);
 	Utility::convertArrayToContainer(amx, params[11], params[16], object->interiors);
 	Utility::convertArrayToContainer(amx, params[12], params[17], object->players);
@@ -56,23 +66,35 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicObjectEx(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::CreateDynamicPickupEx(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(15);
+	const int modelId = static_cast<int>(params[1]);
+	const int pickupType = static_cast<int>(params[2]);
+	const float px = amx_ctof(params[3]), py = amx_ctof(params[4]), pz = amx_ctof(params[5]);
+	const float streamDist = amx_ctof(params[6]);
+	CHECK_MODEL_ID(modelId);
+	CHECK_POS_VEC3(px, py, pz);
+	CHECK_STREAM_DISTANCE(streamDist);
+	if (pickupType < 0 || pickupType > 22)
+	{
+		Utility::logError("CreateDynamicPickupEx: pickup type %d out of range [0, 22].", pickupType);
+		return 0;
+	}
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_PICKUP) == core->getData()->pickups.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int pickupId = Item::Pickup::identifier.get();
-	Item::SharedPickup pickup(new Item::Pickup);
+	Item::SharedPickup pickup = std::make_shared<Item::Pickup>();
 	pickup->amx = amx;
 	pickup->pickupId = pickupId;
 	pickup->inverseAreaChecking = false;
 	pickup->originalComparableStreamDistance = -1.0f;
 	pickup->positionOffset = Eigen::Vector3f::Zero();
 	pickup->streamCallbacks = false;
-	pickup->modelId = static_cast<int>(params[1]);
-	pickup->type = static_cast<int>(params[2]);
-	pickup->position = Eigen::Vector3f(amx_ctof(params[3]), amx_ctof(params[4]), amx_ctof(params[5]));
-	pickup->comparableStreamDistance = amx_ctof(params[6]) < STREAMER_STATIC_DISTANCE_CUTOFF ? amx_ctof(params[6]) : amx_ctof(params[6]) * amx_ctof(params[6]);
-	pickup->streamDistance = amx_ctof(params[6]);
+	pickup->modelId = modelId;
+	pickup->type = pickupType;
+	pickup->position = Eigen::Vector3f(px, py, pz);
+	pickup->comparableStreamDistance = streamDist < STREAMER_STATIC_DISTANCE_CUTOFF ? streamDist : streamDist * streamDist;
+	pickup->streamDistance = streamDist;
 	Utility::convertArrayToContainer(amx, params[7], params[12], pickup->worlds);
 	Utility::convertArrayToContainer(amx, params[8], params[13], pickup->interiors);
 	Utility::convertArrayToContainer(amx, params[9], params[14], pickup->players);
@@ -86,22 +108,28 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicPickupEx(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::CreateDynamicCPEx(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(14);
+	const float px = amx_ctof(params[1]), py = amx_ctof(params[2]), pz = amx_ctof(params[3]);
+	const float size = amx_ctof(params[4]);
+	const float streamDist = amx_ctof(params[5]);
+	CHECK_POS_VEC3(px, py, pz);
+	CHECK_RADIUS(size);
+	CHECK_STREAM_DISTANCE(streamDist);
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_CP) == core->getData()->checkpoints.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int checkpointId = Item::Checkpoint::identifier.get();
-	Item::SharedCheckpoint checkpoint(new Item::Checkpoint);
+	Item::SharedCheckpoint checkpoint = std::make_shared<Item::Checkpoint>();
 	checkpoint->amx = amx;
 	checkpoint->checkpointId = checkpointId;
 	checkpoint->inverseAreaChecking = false;
 	checkpoint->originalComparableStreamDistance = -1.0f;
 	checkpoint->positionOffset = Eigen::Vector3f::Zero();
 	checkpoint->streamCallbacks = false;
-	checkpoint->position = Eigen::Vector3f(amx_ctof(params[1]), amx_ctof(params[2]), amx_ctof(params[3]));
-	checkpoint->size = amx_ctof(params[4]);
-	checkpoint->comparableStreamDistance = amx_ctof(params[5]) < STREAMER_STATIC_DISTANCE_CUTOFF ? amx_ctof(params[5]) : amx_ctof(params[5]) * amx_ctof(params[5]);
-	checkpoint->streamDistance = amx_ctof(params[5]);
+	checkpoint->position = Eigen::Vector3f(px, py, pz);
+	checkpoint->size = size;
+	checkpoint->comparableStreamDistance = streamDist < STREAMER_STATIC_DISTANCE_CUTOFF ? streamDist : streamDist * streamDist;
+	checkpoint->streamDistance = streamDist;
 	Utility::convertArrayToContainer(amx, params[6], params[11], checkpoint->worlds);
 	Utility::convertArrayToContainer(amx, params[7], params[12], checkpoint->interiors);
 	Utility::convertArrayToContainer(amx, params[8], params[13], checkpoint->players);
@@ -115,24 +143,38 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicCPEx(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::CreateDynamicRaceCPEx(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(18);
+	const int raceType = static_cast<int>(params[1]);
+	const float px = amx_ctof(params[2]), py = amx_ctof(params[3]), pz = amx_ctof(params[4]);
+	const float nx = amx_ctof(params[5]), ny = amx_ctof(params[6]), nz = amx_ctof(params[7]);
+	const float size = amx_ctof(params[8]);
+	const float streamDist = amx_ctof(params[9]);
+	CHECK_POS_VEC3(px, py, pz);
+	CHECK_POS_VEC3(nx, ny, nz);
+	CHECK_RADIUS(size);
+	CHECK_STREAM_DISTANCE(streamDist);
+	if (raceType < 0 || raceType > 8)
+	{
+		Utility::logError("CreateDynamicRaceCPEx: race checkpoint type %d out of range [0, 8].", raceType);
+		return 0;
+	}
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_RACE_CP) == core->getData()->raceCheckpoints.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int raceCheckpointId = Item::RaceCheckpoint::identifier.get();
-	Item::SharedRaceCheckpoint raceCheckpoint(new Item::RaceCheckpoint);
+	Item::SharedRaceCheckpoint raceCheckpoint = std::make_shared<Item::RaceCheckpoint>();
 	raceCheckpoint->amx = amx;
 	raceCheckpoint->raceCheckpointId = raceCheckpointId;
 	raceCheckpoint->inverseAreaChecking = false;
 	raceCheckpoint->originalComparableStreamDistance = -1.0f;
 	raceCheckpoint->positionOffset = Eigen::Vector3f::Zero();
 	raceCheckpoint->streamCallbacks = false;
-	raceCheckpoint->type = static_cast<int>(params[1]);
-	raceCheckpoint->position = Eigen::Vector3f(amx_ctof(params[2]), amx_ctof(params[3]), amx_ctof(params[4]));
-	raceCheckpoint->next = Eigen::Vector3f(amx_ctof(params[5]), amx_ctof(params[6]), amx_ctof(params[7]));
-	raceCheckpoint->size = amx_ctof(params[8]);
-	raceCheckpoint->comparableStreamDistance = amx_ctof(params[9]) < STREAMER_STATIC_DISTANCE_CUTOFF ? amx_ctof(params[9]) : amx_ctof(params[9]) * amx_ctof(params[9]);
-	raceCheckpoint->streamDistance = amx_ctof(params[9]);
+	raceCheckpoint->type = raceType;
+	raceCheckpoint->position = Eigen::Vector3f(px, py, pz);
+	raceCheckpoint->next = Eigen::Vector3f(nx, ny, nz);
+	raceCheckpoint->size = size;
+	raceCheckpoint->comparableStreamDistance = streamDist < STREAMER_STATIC_DISTANCE_CUTOFF ? streamDist : streamDist * streamDist;
+	raceCheckpoint->streamDistance = streamDist;
 	Utility::convertArrayToContainer(amx, params[10], params[15], raceCheckpoint->worlds);
 	Utility::convertArrayToContainer(amx, params[11], params[16], raceCheckpoint->interiors);
 	Utility::convertArrayToContainer(amx, params[12], params[17], raceCheckpoint->players);
@@ -146,24 +188,34 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicRaceCPEx(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::CreateDynamicMapIconEx(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(16);
+	const float px = amx_ctof(params[1]), py = amx_ctof(params[2]), pz = amx_ctof(params[3]);
+	const int iconType = static_cast<int>(params[4]);
+	const float streamDist = amx_ctof(params[7]);
+	CHECK_POS_VEC3(px, py, pz);
+	CHECK_STREAM_DISTANCE(streamDist);
+	if (iconType < 0 || iconType > 255)
+	{
+		Utility::logError("CreateDynamicMapIconEx: icon type %d out of range [0, 255].", iconType);
+		return 0;
+	}
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_MAP_ICON) == core->getData()->mapIcons.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int mapIconId = Item::MapIcon::identifier.get();
-	Item::SharedMapIcon mapIcon(new Item::MapIcon);
+	Item::SharedMapIcon mapIcon = std::make_shared<Item::MapIcon>();
 	mapIcon->amx = amx;
 	mapIcon->mapIconId = mapIconId;
 	mapIcon->inverseAreaChecking = false;
 	mapIcon->originalComparableStreamDistance = -1.0f;
 	mapIcon->positionOffset = Eigen::Vector3f::Zero();
 	mapIcon->streamCallbacks = false;
-	mapIcon->position = Eigen::Vector3f(amx_ctof(params[1]), amx_ctof(params[2]), amx_ctof(params[3]));
-	mapIcon->type = static_cast<int>(params[4]);
+	mapIcon->position = Eigen::Vector3f(px, py, pz);
+	mapIcon->type = iconType;
 	mapIcon->color = static_cast<int>(params[5]);
 	mapIcon->style = static_cast<int>(params[6]);
-	mapIcon->comparableStreamDistance = amx_ctof(params[7]) < STREAMER_STATIC_DISTANCE_CUTOFF ? amx_ctof(params[7]) : amx_ctof(params[7]) * amx_ctof(params[7]);
-	mapIcon->streamDistance = amx_ctof(params[7]);
+	mapIcon->comparableStreamDistance = streamDist < STREAMER_STATIC_DISTANCE_CUTOFF ? streamDist : streamDist * streamDist;
+	mapIcon->streamDistance = streamDist;
 	Utility::convertArrayToContainer(amx, params[8], params[13], mapIcon->worlds);
 	Utility::convertArrayToContainer(amx, params[9], params[14], mapIcon->interiors);
 	Utility::convertArrayToContainer(amx, params[10], params[15], mapIcon->players);
@@ -177,12 +229,28 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicMapIconEx(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::CreateDynamic3DTextLabelEx(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(19);
+	const float px = amx_ctof(params[3]), py = amx_ctof(params[4]), pz = amx_ctof(params[5]);
+	const float drawDist = amx_ctof(params[6]);
+	const float streamDist = amx_ctof(params[10]);
+	const bool attached = static_cast<int>(params[7]) != INVALID_PLAYER_ID || static_cast<int>(params[8]) != INVALID_VEHICLE_ID;
+	if (!attached)
+	{
+		CHECK_POS_VEC3(px, py, pz);
+	}
+	else
+	{
+		CHECK_FINITE(px, "position x");
+		CHECK_FINITE(py, "position y");
+		CHECK_FINITE(pz, "position z");
+	}
+	CHECK_DRAW_DISTANCE(drawDist);
+	CHECK_STREAM_DISTANCE(streamDist);
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_3D_TEXT_LABEL) == core->getData()->textLabels.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int textLabelId = Item::TextLabel::identifier.get();
-	Item::SharedTextLabel textLabel(new Item::TextLabel);
+	Item::SharedTextLabel textLabel = std::make_shared<Item::TextLabel>();
 	textLabel->amx = amx;
 	textLabel->textLabelId = textLabelId;
 	textLabel->inverseAreaChecking = false;
@@ -191,8 +259,8 @@ cell AMX_NATIVE_CALL Natives::CreateDynamic3DTextLabelEx(AMX *amx, cell *params)
 	textLabel->streamCallbacks = false;
 	textLabel->text = Utility::convertNativeStringToString(amx, params[1]);
 	textLabel->color = static_cast<int>(params[2]);
-	textLabel->position = Eigen::Vector3f(amx_ctof(params[3]), amx_ctof(params[4]), amx_ctof(params[5]));
-	textLabel->drawDistance = amx_ctof(params[6]);
+	textLabel->position = Eigen::Vector3f(px, py, pz);
+	textLabel->drawDistance = drawDist;
 	if (static_cast<int>(params[7]) != INVALID_PLAYER_ID || static_cast<int>(params[8]) != INVALID_VEHICLE_ID)
 	{
 		textLabel->attach = std::make_shared<Item::TextLabel::Attach>();
@@ -205,8 +273,8 @@ cell AMX_NATIVE_CALL Natives::CreateDynamic3DTextLabelEx(AMX *amx, cell *params)
 		core->getStreamer()->attachedTextLabels.insert(textLabel);
 	}
 	textLabel->testLOS = static_cast<int>(params[9]) != 0;
-	textLabel->comparableStreamDistance = amx_ctof(params[10]) < STREAMER_STATIC_DISTANCE_CUTOFF ? amx_ctof(params[10]) : amx_ctof(params[10]) * amx_ctof(params[10]);
-	textLabel->streamDistance = amx_ctof(params[10]);
+	textLabel->comparableStreamDistance = streamDist < STREAMER_STATIC_DISTANCE_CUTOFF ? streamDist : streamDist * streamDist;
+	textLabel->streamDistance = streamDist;
 	Utility::convertArrayToContainer(amx, params[11], params[16], textLabel->worlds);
 	Utility::convertArrayToContainer(amx, params[12], params[17], textLabel->interiors);
 	Utility::convertArrayToContainer(amx, params[13], params[18], textLabel->players);
@@ -220,19 +288,27 @@ cell AMX_NATIVE_CALL Natives::CreateDynamic3DTextLabelEx(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::CreateDynamicCircleEx(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(10);
+	const float x = amx_ctof(params[1]), y = amx_ctof(params[2]);
+	const float size = amx_ctof(params[3]);
+	if (!Validation::isCoordInRange(x) || !Validation::isCoordInRange(y))
+	{
+		Utility::logError("CreateDynamicCircleEx: invalid position.");
+		return 0;
+	}
+	CHECK_RADIUS(size);
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_AREA) == core->getData()->areas.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int areaId = Item::Area::identifier.get();
-	Item::SharedArea area(new Item::Area);
+	Item::SharedArea area = std::make_shared<Item::Area>();
 	area->amx = amx;
 	area->areaId = areaId;
 	area->spectateMode = true;
 	area->type = STREAMER_AREA_TYPE_CIRCLE;
-	area->position = Eigen::Vector2f(amx_ctof(params[1]), amx_ctof(params[2]));
-	area->comparableSize = amx_ctof(params[3]) * amx_ctof(params[3]);
-	area->size = amx_ctof(params[3]);
+	area->position = Eigen::Vector2f(x, y);
+	area->comparableSize = size * size;
+	area->size = size;
 	Utility::convertArrayToContainer(amx, params[4], params[8], area->worlds);
 	Utility::convertArrayToContainer(amx, params[5], params[9], area->interiors);
 	Utility::convertArrayToContainer(amx, params[6], params[10], area->players);
@@ -245,20 +321,29 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicCircleEx(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::CreateDynamicCylinderEx(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(12);
+	const float x = amx_ctof(params[1]), y = amx_ctof(params[2]);
+	const float minZ = amx_ctof(params[3]), maxZ = amx_ctof(params[4]);
+	const float size = amx_ctof(params[5]);
+	if (!Validation::isCoordInRange(x) || !Validation::isCoordInRange(y) || !Validation::isFinitef(minZ) || !Validation::isFinitef(maxZ))
+	{
+		Utility::logError("CreateDynamicCylinderEx: invalid position or height.");
+		return 0;
+	}
+	CHECK_RADIUS(size);
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_AREA) == core->getData()->areas.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int areaId = Item::Area::identifier.get();
-	Item::SharedArea area(new Item::Area);
+	Item::SharedArea area = std::make_shared<Item::Area>();
 	area->amx = amx;
 	area->areaId = areaId;
 	area->spectateMode = true;
 	area->type = STREAMER_AREA_TYPE_CYLINDER;
-	area->position = Eigen::Vector2f(amx_ctof(params[1]), amx_ctof(params[2]));
-	area->height = Eigen::Vector2f(amx_ctof(params[3]), amx_ctof(params[4]));
-	area->comparableSize = amx_ctof(params[5]) * amx_ctof(params[5]);
-	area->size = amx_ctof(params[5]);
+	area->position = Eigen::Vector2f(x, y);
+	area->height = Eigen::Vector2f(minZ, maxZ);
+	area->comparableSize = size * size;
+	area->size = size;
 	Utility::convertArrayToContainer(amx, params[6], params[10], area->worlds);
 	Utility::convertArrayToContainer(amx, params[7], params[11], area->interiors);
 	Utility::convertArrayToContainer(amx, params[8], params[12], area->players);
@@ -271,19 +356,23 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicCylinderEx(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::CreateDynamicSphereEx(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(11);
+	const float px = amx_ctof(params[1]), py = amx_ctof(params[2]), pz = amx_ctof(params[3]);
+	const float size = amx_ctof(params[4]);
+	CHECK_POS_VEC3(px, py, pz);
+	CHECK_RADIUS(size);
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_AREA) == core->getData()->areas.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int areaId = Item::Area::identifier.get();
-	Item::SharedArea area(new Item::Area);
+	Item::SharedArea area = std::make_shared<Item::Area>();
 	area->amx = amx;
 	area->areaId = areaId;
 	area->spectateMode = true;
 	area->type = STREAMER_AREA_TYPE_SPHERE;
-	area->position = Eigen::Vector3f(amx_ctof(params[1]), amx_ctof(params[2]), amx_ctof(params[3]));
-	area->comparableSize = amx_ctof(params[4]) * amx_ctof(params[4]);
-	area->size = amx_ctof(params[4]);
+	area->position = Eigen::Vector3f(px, py, pz);
+	area->comparableSize = size * size;
+	area->size = size;
 	Utility::convertArrayToContainer(amx, params[5], params[9], area->worlds);
 	Utility::convertArrayToContainer(amx, params[6], params[10], area->interiors);
 	Utility::convertArrayToContainer(amx, params[7], params[11], area->players);
@@ -296,17 +385,24 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicSphereEx(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::CreateDynamicRectangleEx(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(11);
+	const float x1 = amx_ctof(params[1]), y1 = amx_ctof(params[2]);
+	const float x2 = amx_ctof(params[3]), y2 = amx_ctof(params[4]);
+	if (!Validation::isCoordInRange(x1) || !Validation::isCoordInRange(y1) || !Validation::isCoordInRange(x2) || !Validation::isCoordInRange(y2))
+	{
+		Utility::logError("CreateDynamicRectangleEx: invalid rectangle coordinates.");
+		return 0;
+	}
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_AREA) == core->getData()->areas.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int areaId = Item::Area::identifier.get();
-	Item::SharedArea area(new Item::Area);
+	Item::SharedArea area = std::make_shared<Item::Area>();
 	area->amx = amx;
 	area->areaId = areaId;
 	area->spectateMode = true;
 	area->type = STREAMER_AREA_TYPE_RECTANGLE;
-	area->position = Box2d(Eigen::Vector2f(amx_ctof(params[1]), amx_ctof(params[2])), Eigen::Vector2f(amx_ctof(params[3]), amx_ctof(params[4])));
+	area->position = Box2d(Eigen::Vector2f(x1, y1), Eigen::Vector2f(x2, y2));
 	boost::geometry::correct(std::get<Box2d>(area->position));
 	area->comparableSize = static_cast<float>(boost::geometry::comparable_distance(std::get<Box2d>(area->position).min_corner(), std::get<Box2d>(area->position).max_corner()));
 	area->size = static_cast<float>(boost::geometry::distance(std::get<Box2d>(area->position).min_corner(), std::get<Box2d>(area->position).max_corner()));
@@ -322,17 +418,21 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicRectangleEx(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::CreateDynamicCuboidEx(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(13);
+	const float x1 = amx_ctof(params[1]), y1 = amx_ctof(params[2]), z1 = amx_ctof(params[3]);
+	const float x2 = amx_ctof(params[4]), y2 = amx_ctof(params[5]), z2 = amx_ctof(params[6]);
+	CHECK_POS_VEC3(x1, y1, z1);
+	CHECK_POS_VEC3(x2, y2, z2);
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_AREA) == core->getData()->areas.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int areaId = Item::Area::identifier.get();
-	Item::SharedArea area(new Item::Area);
+	Item::SharedArea area = std::make_shared<Item::Area>();
 	area->amx = amx;
 	area->areaId = areaId;
 	area->spectateMode = true;
 	area->type = STREAMER_AREA_TYPE_CUBOID;
-	area->position = Box3d(Eigen::Vector3f(amx_ctof(params[1]), amx_ctof(params[2]), amx_ctof(params[3])), Eigen::Vector3f(amx_ctof(params[4]), amx_ctof(params[5]), amx_ctof(params[6])));
+	area->position = Box3d(Eigen::Vector3f(x1, y1, z1), Eigen::Vector3f(x2, y2, z2));
 	boost::geometry::correct(std::get<Box3d>(area->position));
 	area->comparableSize = static_cast<float>(boost::geometry::comparable_distance(Eigen::Vector2f(std::get<Box3d>(area->position).min_corner()[0], std::get<Box3d>(area->position).min_corner()[1]), Eigen::Vector2f(std::get<Box3d>(area->position).max_corner()[0], std::get<Box3d>(area->position).max_corner()[1])));
 	area->size = static_cast<float>(boost::geometry::distance(Eigen::Vector2f(std::get<Box3d>(area->position).min_corner()[0], std::get<Box3d>(area->position).min_corner()[1]), Eigen::Vector2f(std::get<Box3d>(area->position).max_corner()[0], std::get<Box3d>(area->position).max_corner()[1])));
@@ -348,17 +448,24 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicCuboidEx(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::CreateDynamicPolygonEx(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(11);
+	const int pointCount = static_cast<int>(params[4]);
+	const float minZ = amx_ctof(params[2]), maxZ = amx_ctof(params[3]);
+	if (!Validation::isFinitef(minZ) || !Validation::isFinitef(maxZ))
+	{
+		Utility::logError("CreateDynamicPolygonEx: invalid height bounds.");
+		return 0;
+	}
+	if (!Validation::isPolygonArraySize(pointCount))
+	{
+		Utility::logError("CreateDynamicPolygonEx: Number of points %d invalid (must be even and >= 6).", pointCount);
+		return INVALID_STREAMER_ID;
+	}
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_AREA) == core->getData()->areas.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
-	if (static_cast<int>(params[4]) < 6 || static_cast<int>(params[4]) % 2)
-	{
-		Utility::logError("CreateDynamicPolygonEx: Number of points must be divisible by 2 and bigger or equal to 6.");
-		return INVALID_STREAMER_ID;
-	}
 	int areaId = Item::Area::identifier.get();
-	Item::SharedArea area(new Item::Area);
+	Item::SharedArea area = std::make_shared<Item::Area>();
 	area->amx = amx;
 	area->areaId = areaId;
 	area->spectateMode = true;
@@ -380,23 +487,33 @@ cell AMX_NATIVE_CALL Natives::CreateDynamicPolygonEx(AMX *amx, cell *params)
 cell AMX_NATIVE_CALL Natives::CreateDynamicActorEx(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(17);
+	const int modelId = static_cast<int>(params[1]);
+	const float px = amx_ctof(params[2]), py = amx_ctof(params[3]), pz = amx_ctof(params[4]);
+	const float rot = amx_ctof(params[5]);
+	const float health = amx_ctof(params[7]);
+	const float streamDist = amx_ctof(params[8]);
+	CHECK_MODEL_ID(modelId);
+	CHECK_POS_VEC3(px, py, pz);
+	CHECK_FINITE(rot, "rotation");
+	CHECK_FINITE(health, "health");
+	CHECK_STREAM_DISTANCE(streamDist);
 	if (core->getData()->getGlobalMaxItems(STREAMER_TYPE_ACTOR) == core->getData()->actors.size())
 	{
 		return INVALID_STREAMER_ID;
 	}
 	int actorId = Item::Actor::identifier.get();
-	Item::SharedActor actor(new Item::Actor);
+	Item::SharedActor actor = std::make_shared<Item::Actor>();
 	actor->amx = amx;
 	actor->actorId = actorId;
 	actor->inverseAreaChecking = false;
 	actor->originalComparableStreamDistance = -1.0f;
-	actor->modelId = static_cast<int>(params[1]);
-	actor->position = Eigen::Vector3f(amx_ctof(params[2]), amx_ctof(params[3]), amx_ctof(params[4]));
-	actor->rotation = amx_ctof(params[5]);
+	actor->modelId = modelId;
+	actor->position = Eigen::Vector3f(px, py, pz);
+	actor->rotation = rot;
 	actor->invulnerable = static_cast<int>(params[6]) != 0;
-	actor->health = amx_ctof(params[7]);
-	actor->comparableStreamDistance = amx_ctof(params[8]) < STREAMER_STATIC_DISTANCE_CUTOFF ? amx_ctof(params[8]) : amx_ctof(params[8]) * amx_ctof(params[8]);
-	actor->streamDistance = amx_ctof(params[8]);
+	actor->health = health;
+	actor->comparableStreamDistance = streamDist < STREAMER_STATIC_DISTANCE_CUTOFF ? streamDist : streamDist * streamDist;
+	actor->streamDistance = streamDist;
 	Utility::convertArrayToContainer(amx, params[9], params[14], actor->worlds);
 	Utility::convertArrayToContainer(amx, params[10], params[15], actor->interiors);
 	Utility::convertArrayToContainer(amx, params[11], params[16], actor->players);
