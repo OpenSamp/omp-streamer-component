@@ -229,6 +229,47 @@ struct IStreamerComponent : public IExtension
 	virtual bool setActorVirtualWorld(int actorId, int worldId) = 0;
 
 	// ============================================================================
+	// Telemetry (VS:RP fork) — per-phase cumulative timings + stream-in/out counters.
+	// All counters are cumulative since the last resetPhaseStats() call.
+	// `type` is one of STREAMER_TYPE_* (defined in common.h).
+	// ============================================================================
+
+	/// Nanoseconds spent in the process* loop for `type` (clamped to uint64 max).
+	virtual uint64_t getPhaseTimeNs(int type) = 0;
+	/// Average microseconds per player-tick in phase `type`. Divides by the number
+	/// of recorded player-ticks since last reset; returns 0 if no ticks yet.
+	virtual uint64_t getPhaseAvgUs(int type) = 0;
+	/// Total number of per-player ticks recorded since last reset.
+	virtual uint64_t getPhaseTickCount() = 0;
+	/// Count of client-create (CreatePlayerObject / SetPlayerMapIcon /
+	/// CreatePlayer3DTextLabel) calls issued since last reset.
+	virtual uint64_t getPhaseStreamInCount(int type) = 0;
+	/// Count of client-destroy calls issued since last reset.
+	virtual uint64_t getPhaseStreamOutCount(int type) = 0;
+	/// Zero every telemetry counter. Typically call once a minute after reading.
+	virtual void resetPhaseStats() = 0;
+
+	// ============================================================================
+	// Anti-flicker hysteresis (VS:RP fork). Stream-out stickiness for per-player
+	// items (OBJECT / MAP_ICON / 3D_TEXT_LABEL). Default 1.0 = legacy behavior.
+	// ============================================================================
+
+	virtual float getHysteresisFactor(int type) = 0;
+	/// Valid range [1.0, 10.0]. Returns false on invalid type/value.
+	virtual bool setHysteresisFactor(int type, float value) = 0;
+
+	// ============================================================================
+	// Two-tier grid (VS:RP fork). Items with streamDistance between cellDistance
+	// and coarseCellDistance bucket into coarser cells instead of globalCell.
+	// Set coarseCellDistance = 0 to disable the tier.
+	// ============================================================================
+
+	virtual float getCoarseCellSize() = 0;
+	virtual bool setCoarseCellSize(float size) = 0;  // rebuilds grid
+	virtual float getCoarseCellDistance() = 0;
+	virtual bool setCoarseCellDistance(float distance) = 0;  // rebuilds grid
+
+	// ============================================================================
 	// Event handlers
 	// ============================================================================
 

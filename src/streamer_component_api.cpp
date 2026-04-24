@@ -901,6 +901,84 @@ public:
 	int getActorVirtualWorld(int id) override { return IStreamerComponent_getActorVirtualWorld(id); }
 	bool setActorVirtualWorld(int id, int w) override { return IStreamerComponent_setActorVirtualWorld(id, w); }
 
+	// --- Telemetry (VS:RP fork) ---------------------------------------------------
+
+	uint64_t getPhaseTimeNs(int type) override
+	{
+		if (type < 0 || type >= STREAMER_MAX_TYPES) return 0;
+		return core->getStreamer()->phaseTimeNs[type];
+	}
+
+	uint64_t getPhaseAvgUs(int type) override
+	{
+		if (type < 0 || type >= STREAMER_MAX_TYPES) return 0;
+		const auto ticks = core->getStreamer()->phaseTickCount;
+		if (ticks == 0) return 0;
+		return (core->getStreamer()->phaseTimeNs[type] / ticks) / 1000ULL;
+	}
+
+	uint64_t getPhaseTickCount() override
+	{
+		return static_cast<uint64_t>(core->getStreamer()->phaseTickCount);
+	}
+
+	uint64_t getPhaseStreamInCount(int type) override
+	{
+		if (type < 0 || type >= STREAMER_MAX_TYPES) return 0;
+		return core->getStreamer()->phaseStreamInCount[type];
+	}
+
+	uint64_t getPhaseStreamOutCount(int type) override
+	{
+		if (type < 0 || type >= STREAMER_MAX_TYPES) return 0;
+		return core->getStreamer()->phaseStreamOutCount[type];
+	}
+
+	void resetPhaseStats() override
+	{
+		core->getStreamer()->resetStats();
+	}
+
+	// --- Hysteresis (VS:RP fork) --------------------------------------------------
+
+	float getHysteresisFactor(int type) override
+	{
+		return core->getStreamer()->getHysteresisFactor(type);
+	}
+
+	bool setHysteresisFactor(int type, float value) override
+	{
+		return core->getStreamer()->setHysteresisFactor(type, value);
+	}
+
+	// --- Two-tier grid (VS:RP fork) -----------------------------------------------
+
+	float getCoarseCellSize() override
+	{
+		return core->getGrid()->getCoarseCellSize();
+	}
+
+	bool setCoarseCellSize(float size) override
+	{
+		if (!(size > 0.0f && size <= 1.0e6f)) return false;
+		core->getGrid()->setCoarseCellSize(size);
+		core->getGrid()->rebuildGrid();
+		return true;
+	}
+
+	float getCoarseCellDistance() override
+	{
+		return core->getGrid()->getCoarseCellDistance();
+	}
+
+	bool setCoarseCellDistance(float distance) override
+	{
+		if (!(distance >= 0.0f && distance <= 1.0e6f)) return false;
+		core->getGrid()->setCoarseCellDistance(distance);
+		core->getGrid()->rebuildGrid();
+		return true;
+	}
+
 	void addEventHandler(IStreamerEventHandler* h) override
 	{
 		if (!h) return;
