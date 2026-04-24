@@ -172,6 +172,50 @@ cell AMX_NATIVE_CALL Natives::Streamer_SetCellSize(AMX *amx, cell *params)
 	return 1;
 }
 
+cell AMX_NATIVE_CALL Natives::Streamer_GetCoarseCellSize(AMX *amx, cell *params)
+{
+	CHECK_PARAMS(1);
+	float v = core->getGrid()->getCoarseCellSize();
+	Utility::storeFloatInNative(amx, params[1], v);
+	return 1;
+}
+
+cell AMX_NATIVE_CALL Natives::Streamer_SetCoarseCellSize(AMX *amx, cell *params)
+{
+	CHECK_PARAMS(1);
+	const float v = amx_ctof(params[1]);
+	if (!(v > 0.0f && v <= 1.0e6f))
+	{
+		Utility::logError("Streamer_SetCoarseCellSize: invalid size %f (must be > 0 and finite).", v);
+		return 0;
+	}
+	core->getGrid()->setCoarseCellSize(v);
+	core->getGrid()->rebuildGrid();
+	return 1;
+}
+
+cell AMX_NATIVE_CALL Natives::Streamer_GetCoarseCellDistance(AMX *amx, cell *params)
+{
+	CHECK_PARAMS(1);
+	float v = core->getGrid()->getCoarseCellDistance();
+	Utility::storeFloatInNative(amx, params[1], v);
+	return 1;
+}
+
+cell AMX_NATIVE_CALL Natives::Streamer_SetCoarseCellDistance(AMX *amx, cell *params)
+{
+	CHECK_PARAMS(1);
+	const float v = amx_ctof(params[1]);
+	if (!(v >= 0.0f && v <= 1.0e6f))
+	{
+		Utility::logError("Streamer_SetCoarseCellDistance: invalid distance %f (0 disables the coarse tier).", v);
+		return 0;
+	}
+	core->getGrid()->setCoarseCellDistance(v);
+	core->getGrid()->rebuildGrid();
+	return 1;
+}
+
 cell AMX_NATIVE_CALL Natives::Streamer_ToggleItemStatic(AMX *amx, cell *params)
 {
 	CHECK_PARAMS(3);

@@ -25,9 +25,6 @@
 // sees the real constexpr from values.hpp rather than legacy shadow macros.
 #include <values.hpp>
 
-#include <boost/bimap.hpp>
-#include <boost/bimap/multiset_of.hpp>
-#include <boost/bimap/unordered_set_of.hpp>
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/geometries.hpp>
 

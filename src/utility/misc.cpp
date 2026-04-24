@@ -76,16 +76,8 @@ std::unordered_map<int, Item::SharedMapIcon>::iterator Utility::destroyMapIcon(s
 	Item::MapIcon::identifier.remove(m->first, core->getData()->mapIcons.size());
 	for (std::unordered_map<int, Player>::iterator p = core->getData()->players.begin(); p != core->getData()->players.end(); ++p)
 	{
-		Item::Bimap<Item::SharedMapIcon>::Type::right_iterator d = p->second.discoveredMapIcons.right.find(std::make_tuple(m->first, m->second));
-		if (d != p->second.discoveredMapIcons.right.end())
-		{
-			p->second.discoveredMapIcons.right.erase(d);
-		}
-		Item::Bimap<Item::SharedMapIcon>::Type::right_iterator e = p->second.existingMapIcons.right.find(std::make_tuple(m->first, m->second));
-		if (e != p->second.existingMapIcons.right.end())
-		{
-			p->second.existingMapIcons.right.erase(e);
-		}
+		p->second.discoveredMapIcons.eraseById(m->first);
+		p->second.existingMapIcons.eraseById(m->first);
 		std::unordered_map<int, int>::iterator i = p->second.internalMapIcons.find(m->first);
 		if (i != p->second.internalMapIcons.end())
 		{
@@ -109,16 +101,8 @@ std::unordered_map<int, Item::SharedObject>::iterator Utility::destroyObject(std
 	Item::Object::identifier.remove(o->first, core->getData()->objects.size());
 	for (std::unordered_map<int, Player>::iterator p = core->getData()->players.begin(); p != core->getData()->players.end(); ++p)
 	{
-		Item::Bimap<Item::SharedObject>::Type::right_iterator d = p->second.discoveredObjects.right.find(std::make_tuple(o->first, o->second));
-		if (d != p->second.discoveredObjects.right.end())
-		{
-			p->second.discoveredObjects.right.erase(d);
-		}
-		Item::Bimap<Item::SharedObject>::Type::right_iterator e = p->second.existingObjects.right.find(std::make_tuple(o->first, o->second));
-		if (e != p->second.existingObjects.right.end())
-		{
-			p->second.existingObjects.right.erase(e);
-		}
+		p->second.discoveredObjects.eraseById(o->first);
+		p->second.existingObjects.eraseById(o->first);
 		std::unordered_map<int, int>::iterator i = p->second.internalObjects.find(o->first);
 		if (i != p->second.internalObjects.end())
 		{
@@ -179,16 +163,8 @@ std::unordered_map<int, Item::SharedTextLabel>::iterator Utility::destroyTextLab
 	Item::TextLabel::identifier.remove(t->first, core->getData()->textLabels.size());
 	for (std::unordered_map<int, Player>::iterator p = core->getData()->players.begin(); p != core->getData()->players.end(); ++p)
 	{
-		Item::Bimap<Item::SharedTextLabel>::Type::right_iterator d = p->second.discoveredTextLabels.right.find(std::make_tuple(t->first, t->second));
-		if (d != p->second.discoveredTextLabels.right.end())
-		{
-			p->second.discoveredTextLabels.right.erase(d);
-		}
-		Item::Bimap<Item::SharedTextLabel>::Type::right_iterator e = p->second.existingTextLabels.right.find(std::make_tuple(t->first, t->second));
-		if (e != p->second.existingTextLabels.right.end())
-		{
-			p->second.existingTextLabels.right.erase(e);
-		}
+		p->second.discoveredTextLabels.eraseById(t->first);
+		p->second.existingTextLabels.eraseById(t->first);
 		std::unordered_map<int, int>::iterator i = p->second.internalTextLabels.find(t->first);
 		if (i != p->second.internalTextLabels.end())
 		{

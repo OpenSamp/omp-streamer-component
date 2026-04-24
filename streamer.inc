@@ -204,6 +204,13 @@ native Streamer_GetCellDistance(&Float:distance);
 native Streamer_SetCellDistance(Float:distance);
 native Streamer_GetCellSize(&Float:size);
 native Streamer_SetCellSize(Float:size);
+// Two-tier grid (VS:RP fork). Items with stream distance between cellDistance and
+// coarseCellDistance are bucketed into larger coarse cells (default 1500×1500) instead
+// of globalCell. Distance = 0 disables the tier.
+native Streamer_GetCoarseCellSize(&Float:size);
+native Streamer_SetCoarseCellSize(Float:size);
+native Streamer_GetCoarseCellDistance(&Float:distance);
+native Streamer_SetCoarseCellDistance(Float:distance);
 native Streamer_ToggleItemStatic(type, STREAMER_ALL_TAGS:id, toggle);
 native Streamer_IsToggleItemStatic(type, STREAMER_ALL_TAGS:id);
 native Streamer_ToggleItemInvAreas(type, STREAMER_ALL_TAGS:id, toggle);

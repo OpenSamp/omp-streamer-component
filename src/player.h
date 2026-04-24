@@ -19,6 +19,7 @@
 
 #include "cell.h"
 #include "identifier.h"
+#include "utility/ordered_item_set.h"
 
 struct Player
 {
@@ -57,13 +58,16 @@ struct Player
 	std::bitset<STREAMER_MAX_TYPES> enabledItems;
 	std::bitset<STREAMER_MAX_TYPES> processingChunks;
 
-	Item::Bimap<Item::SharedMapIcon>::Type discoveredMapIcons;
-	Item::Bimap<Item::SharedObject>::Type discoveredObjects;
-	Item::Bimap<Item::SharedTextLabel>::Type discoveredTextLabels;
+	// Chunk streaming per-player working set. Replaces the earlier boost::bimap with a
+	// lighter std::map + unordered_map combo (see utility/ordered_item_set.h). Ordered
+	// iteration by (priority, distance) is preserved; O(1) lookup by id is added.
+	Utility::OrderedItemSet<Item::SharedMapIcon>   discoveredMapIcons;
+	Utility::OrderedItemSet<Item::SharedObject>    discoveredObjects;
+	Utility::OrderedItemSet<Item::SharedTextLabel> discoveredTextLabels;
 
-	Item::Bimap<Item::SharedMapIcon>::Type existingMapIcons;
-	Item::Bimap<Item::SharedObject>::Type existingObjects;
-	Item::Bimap<Item::SharedTextLabel>::Type existingTextLabels;
+	Utility::OrderedItemSet<Item::SharedMapIcon>   existingMapIcons;
+	Utility::OrderedItemSet<Item::SharedObject>    existingObjects;
+	Utility::OrderedItemSet<Item::SharedTextLabel> existingTextLabels;
 
 	std::unordered_set<int> internalAreas;
 	std::unordered_map<int, int> internalMapIcons;

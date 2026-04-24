@@ -21,193 +21,234 @@
 
 Grid::Grid()
 {
-	cellDistance = 360000.0f;
+	cellDistance = 360000.0f; // stream-distance² threshold for fine tier (default 600m²)
 	cellSize = 300.0f;
 	globalCell = std::make_shared<Cell>();
 	calculateTranslationMatrix();
+	// Coarse tier defaults: items with stream distance in (600m, 2500m] go into 1500×1500
+	// cells instead of the O(N) globalCell bucket. Big-radius items (airports, stunt
+	// ramps, signboards) only match players inside their ~9-cell fan-out instead of
+	// being scanned for every player every tick.
+}
+
+CellId Grid::getCoarseCellId(const Eigen::Vector2f &position, bool insert)
+{
+	const float minX = std::floor(position[0] / coarseCellSize) * coarseCellSize;
+	const float minY = std::floor(position[1] / coarseCellSize) * coarseCellSize;
+	const CellId cellId = std::make_pair(static_cast<int>(minX + coarseCellSize * 0.5f),
+	                                      static_cast<int>(minY + coarseCellSize * 0.5f));
+	if (insert)
+	{
+		auto c = coarseCells.find(cellId);
+		if (c == coarseCells.end())
+		{
+			auto cell = std::make_shared<Cell>(cellId);
+			cell->coarse = true;
+			coarseCells.emplace(cellId, std::move(cell));
+		}
+	}
+	return cellId;
+}
+
+// Resolve (and if needed create) the target cell in the tier indicated by `coarse`.
+SharedCell Grid::acquireCell(const Eigen::Vector2f &position, bool coarse)
+{
+	if (coarse)
+	{
+		CellId id = getCoarseCellId(position);
+		return coarseCells[id];
+	}
+	CellId id = getCellId(position);
+	return cells[id];
 }
 
 void Grid::addActor(const Item::SharedActor &actor)
 {
-	if (actor->comparableStreamDistance > cellDistance || actor->comparableStreamDistance < STREAMER_STATIC_DISTANCE_CUTOFF)
+	const int tier = pickTier(actor->comparableStreamDistance);
+	if (tier == 0)
 	{
 		globalCell->actors.insert(std::make_pair(actor->actorId, actor));
 		actor->cell.reset();
+		return;
 	}
-	else
-	{
-		CellId cellId = getCellId(Eigen::Vector2f(actor->position[0], actor->position[1]));
-		cells[cellId]->actors.insert(std::make_pair(actor->actorId, actor));
-		actor->cell = cells[cellId];
-	}
+	SharedCell cell = acquireCell(Eigen::Vector2f(actor->position[0], actor->position[1]), tier == 1);
+	cell->actors.insert(std::make_pair(actor->actorId, actor));
+	actor->cell = cell;
 }
 
 void Grid::addArea(const Item::SharedArea &area)
 {
-	if (area->comparableSize > cellDistance)
+	// Areas tier on their own "size" (squared radius), not streamDistance.
+	int tier;
+	if (area->comparableSize <= comparableCellDistance)
 	{
-		globalCell->areas.insert(std::make_pair(area->areaId, area));
-		area->cell.reset();
+		tier = 2;
+	}
+	else if (comparableCoarseCellDistance > 0.0f && area->comparableSize <= comparableCoarseCellDistance)
+	{
+		tier = 1;
 	}
 	else
 	{
-		Eigen::Vector2f centroid = Eigen::Vector2f::Zero();
-		std::variant<Polygon2d, Box2d, Box3d, Eigen::Vector2f, Eigen::Vector3f> position;
-		if (area->attach)
-		{
-			position = area->attach->position;
-		}
-		else
-		{
-			position = area->position;
-		}
-		switch (area->type)
-		{
-			case STREAMER_AREA_TYPE_CIRCLE:
-			case STREAMER_AREA_TYPE_CYLINDER:
-			{
-				centroid = Eigen::Vector2f(std::get<Eigen::Vector2f>(position));
-				break;
-			}
-			case STREAMER_AREA_TYPE_SPHERE:
-			{
-				centroid = Eigen::Vector2f(std::get<Eigen::Vector3f>(position)[0], std::get<Eigen::Vector3f>(position)[1]);
-				break;
-			}
-			case STREAMER_AREA_TYPE_RECTANGLE:
-			{
-				boost::geometry::centroid(std::get<Box2d>(position), centroid);
-				break;
-			}
-			case STREAMER_AREA_TYPE_CUBOID:
-			{
-				Eigen::Vector3f point = boost::geometry::return_centroid<Eigen::Vector3f>(std::get<Box3d>(position));
-				centroid = Eigen::Vector2f(point[0], point[1]);
-				break;
-			}
-			case STREAMER_AREA_TYPE_POLYGON:
-			{
-				boost::geometry::centroid(std::get<Polygon2d>(position), centroid);
-				break;
-			}
-		}
-		CellId cellId = getCellId(centroid);
-		cells[cellId]->areas.insert(std::make_pair(area->areaId, area));
-		area->cell = cells[cellId];
+		tier = 0;
 	}
+	if (tier == 0)
+	{
+		globalCell->areas.insert(std::make_pair(area->areaId, area));
+		area->cell.reset();
+		return;
+	}
+	Eigen::Vector2f centroid = Eigen::Vector2f::Zero();
+	std::variant<Polygon2d, Box2d, Box3d, Eigen::Vector2f, Eigen::Vector3f> position;
+	if (area->attach)
+	{
+		position = area->attach->position;
+	}
+	else
+	{
+		position = area->position;
+	}
+	switch (area->type)
+	{
+		case STREAMER_AREA_TYPE_CIRCLE:
+		case STREAMER_AREA_TYPE_CYLINDER:
+		{
+			centroid = Eigen::Vector2f(std::get<Eigen::Vector2f>(position));
+			break;
+		}
+		case STREAMER_AREA_TYPE_SPHERE:
+		{
+			centroid = Eigen::Vector2f(std::get<Eigen::Vector3f>(position)[0], std::get<Eigen::Vector3f>(position)[1]);
+			break;
+		}
+		case STREAMER_AREA_TYPE_RECTANGLE:
+		{
+			boost::geometry::centroid(std::get<Box2d>(position), centroid);
+			break;
+		}
+		case STREAMER_AREA_TYPE_CUBOID:
+		{
+			Eigen::Vector3f point = boost::geometry::return_centroid<Eigen::Vector3f>(std::get<Box3d>(position));
+			centroid = Eigen::Vector2f(point[0], point[1]);
+			break;
+		}
+		case STREAMER_AREA_TYPE_POLYGON:
+		{
+			boost::geometry::centroid(std::get<Polygon2d>(position), centroid);
+			break;
+		}
+	}
+	SharedCell cell = acquireCell(centroid, tier == 1);
+	cell->areas.insert(std::make_pair(area->areaId, area));
+	area->cell = cell;
 }
 
 void Grid::addCheckpoint(const Item::SharedCheckpoint &checkpoint)
 {
-	if (checkpoint->comparableStreamDistance > cellDistance || checkpoint->comparableStreamDistance < STREAMER_STATIC_DISTANCE_CUTOFF)
+	const int tier = pickTier(checkpoint->comparableStreamDistance);
+	if (tier == 0)
 	{
 		globalCell->checkpoints.insert(std::make_pair(checkpoint->checkpointId, checkpoint));
 		checkpoint->cell.reset();
+		return;
 	}
-	else
-	{
-		CellId cellId = getCellId(Eigen::Vector2f(checkpoint->position[0], checkpoint->position[1]));
-		cells[cellId]->checkpoints.insert(std::make_pair(checkpoint->checkpointId, checkpoint));
-		checkpoint->cell = cells[cellId];
-	}
+	SharedCell cell = acquireCell(Eigen::Vector2f(checkpoint->position[0], checkpoint->position[1]), tier == 1);
+	cell->checkpoints.insert(std::make_pair(checkpoint->checkpointId, checkpoint));
+	checkpoint->cell = cell;
 }
 
 void Grid::addMapIcon(const Item::SharedMapIcon &mapIcon)
 {
-	if (mapIcon->comparableStreamDistance > cellDistance || mapIcon->comparableStreamDistance < STREAMER_STATIC_DISTANCE_CUTOFF)
+	const int tier = pickTier(mapIcon->comparableStreamDistance);
+	if (tier == 0)
 	{
 		globalCell->mapIcons.insert(std::make_pair(mapIcon->mapIconId, mapIcon));
 		mapIcon->cell.reset();
+		return;
 	}
-	else
-	{
-		CellId cellId = getCellId(Eigen::Vector2f(mapIcon->position[0], mapIcon->position[1]));
-		cells[cellId]->mapIcons.insert(std::make_pair(mapIcon->mapIconId, mapIcon));
-		mapIcon->cell = cells[cellId];
-	}
+	SharedCell cell = acquireCell(Eigen::Vector2f(mapIcon->position[0], mapIcon->position[1]), tier == 1);
+	cell->mapIcons.insert(std::make_pair(mapIcon->mapIconId, mapIcon));
+	mapIcon->cell = cell;
 }
 
 void Grid::addObject(const Item::SharedObject &object)
 {
-	if (object->comparableStreamDistance > cellDistance || object->comparableStreamDistance < STREAMER_STATIC_DISTANCE_CUTOFF)
+	const int tier = pickTier(object->comparableStreamDistance);
+	if (tier == 0)
 	{
 		globalCell->objects.insert(std::make_pair(object->objectId, object));
 		object->cell.reset();
+		return;
+	}
+	Eigen::Vector2f position;
+	if (object->attach)
+	{
+		position = Eigen::Vector2f(object->attach->position[0], object->attach->position[1]);
 	}
 	else
 	{
-		Eigen::Vector2f position = Eigen::Vector2f::Zero();
-		if (object->attach)
-		{
-			position = Eigen::Vector2f(object->attach->position[0], object->attach->position[1]);
-		}
-		else
-		{
-			position = Eigen::Vector2f(object->position[0], object->position[1]);
-		}
-		CellId cellId = getCellId(Eigen::Vector2f(position[0], position[1]));
-		cells[cellId]->objects.insert(std::make_pair(object->objectId, object));
-		object->cell = cells[cellId];
+		position = Eigen::Vector2f(object->position[0], object->position[1]);
 	}
+	SharedCell cell = acquireCell(position, tier == 1);
+	cell->objects.insert(std::make_pair(object->objectId, object));
+	object->cell = cell;
 }
 
 void Grid::addPickup(const Item::SharedPickup &pickup)
 {
-	if (pickup->comparableStreamDistance > cellDistance || pickup->comparableStreamDistance < STREAMER_STATIC_DISTANCE_CUTOFF)
+	const int tier = pickTier(pickup->comparableStreamDistance);
+	if (tier == 0)
 	{
 		globalCell->pickups.insert(std::make_pair(pickup->pickupId, pickup));
 		pickup->cell.reset();
+		return;
 	}
-	else
-	{
-		CellId cellId = getCellId(Eigen::Vector2f(pickup->position[0], pickup->position[1]));
-		cells[cellId]->pickups.insert(std::make_pair(pickup->pickupId, pickup));
-		pickup->cell = cells[cellId];
-	}
+	SharedCell cell = acquireCell(Eigen::Vector2f(pickup->position[0], pickup->position[1]), tier == 1);
+	cell->pickups.insert(std::make_pair(pickup->pickupId, pickup));
+	pickup->cell = cell;
 }
 
 void Grid::addRaceCheckpoint(const Item::SharedRaceCheckpoint &raceCheckpoint)
 {
-	if (raceCheckpoint->comparableStreamDistance > cellDistance || raceCheckpoint->comparableStreamDistance < STREAMER_STATIC_DISTANCE_CUTOFF)
+	const int tier = pickTier(raceCheckpoint->comparableStreamDistance);
+	if (tier == 0)
 	{
 		globalCell->raceCheckpoints.insert(std::make_pair(raceCheckpoint->raceCheckpointId, raceCheckpoint));
 		raceCheckpoint->cell.reset();
+		return;
 	}
-	else
-	{
-		CellId cellId = getCellId(Eigen::Vector2f(raceCheckpoint->position[0], raceCheckpoint->position[1]));
-		cells[cellId]->raceCheckpoints.insert(std::make_pair(raceCheckpoint->raceCheckpointId, raceCheckpoint));
-		raceCheckpoint->cell = cells[cellId];
-	}
+	SharedCell cell = acquireCell(Eigen::Vector2f(raceCheckpoint->position[0], raceCheckpoint->position[1]), tier == 1);
+	cell->raceCheckpoints.insert(std::make_pair(raceCheckpoint->raceCheckpointId, raceCheckpoint));
+	raceCheckpoint->cell = cell;
 }
 
 void Grid::addTextLabel(const Item::SharedTextLabel &textLabel)
 {
-	if (textLabel->comparableStreamDistance > cellDistance || textLabel->comparableStreamDistance < STREAMER_STATIC_DISTANCE_CUTOFF)
+	const int tier = pickTier(textLabel->comparableStreamDistance);
+	if (tier == 0)
 	{
 		globalCell->textLabels.insert(std::make_pair(textLabel->textLabelId, textLabel));
 		textLabel->cell.reset();
+		return;
+	}
+	Eigen::Vector2f position;
+	if (textLabel->attach)
+	{
+		position = Eigen::Vector2f(textLabel->attach->position[0], textLabel->attach->position[1]);
 	}
 	else
 	{
-		Eigen::Vector2f position = Eigen::Vector2f::Zero();
-		if (textLabel->attach)
-		{
-			position = Eigen::Vector2f(textLabel->attach->position[0], textLabel->attach->position[1]);
-		}
-		else
-		{
-			position = Eigen::Vector2f(textLabel->position[0], textLabel->position[1]);;
-		}
-		CellId cellId = getCellId(position);
-		cells[cellId]->textLabels.insert(std::make_pair(textLabel->textLabelId, textLabel));
-		textLabel->cell = cells[cellId];
+		position = Eigen::Vector2f(textLabel->position[0], textLabel->position[1]);
 	}
+	SharedCell cell = acquireCell(position, tier == 1);
+	cell->textLabels.insert(std::make_pair(textLabel->textLabelId, textLabel));
+	textLabel->cell = cell;
 }
 
 void Grid::rebuildGrid()
 {
 	cells.clear();
+	coarseCells.clear();
 	globalCell = std::make_shared<Cell>();
 	calculateTranslationMatrix();
 	for (std::unordered_map<int, Item::SharedActor>::iterator a = core->getData()->actors.begin(); a != core->getData()->actors.end(); ++a)
@@ -249,8 +290,9 @@ void Grid::removeActor(const Item::SharedActor &actor, bool reassign)
 	bool found = false;
 	if (actor->cell)
 	{
-		std::unordered_map<CellId, SharedCell, pair_hash>::iterator c = cells.find(actor->cell->cellId);
-		if (c != cells.end())
+		auto &tier = tierOf(actor->cell);
+		auto c = tier.find(actor->cell->cellId);
+		if (c != tier.end())
 		{
 			std::unordered_map<int, Item::SharedActor>::iterator a = c->second->actors.find(actor->actorId);
 			if (a != c->second->actors.end())
@@ -284,8 +326,9 @@ void Grid::removeArea(const Item::SharedArea &area, bool reassign)
 	bool found = false;
 	if (area->cell)
 	{
-		std::unordered_map<CellId, SharedCell, pair_hash>::iterator c = cells.find(area->cell->cellId);
-		if (c != cells.end())
+		auto &tier = tierOf(area->cell);
+		auto c = tier.find(area->cell->cellId);
+		if (c != tier.end())
 		{
 			std::unordered_map<int, Item::SharedArea>::iterator a = c->second->areas.find(area->areaId);
 			if (a != c->second->areas.end())
@@ -326,8 +369,9 @@ void Grid::removeCheckpoint(const Item::SharedCheckpoint &checkpoint, bool reass
 	bool found = false;
 	if (checkpoint->cell)
 	{
-		std::unordered_map<CellId, SharedCell, pair_hash>::iterator c = cells.find(checkpoint->cell->cellId);
-		if (c != cells.end())
+		auto &tier = tierOf(checkpoint->cell);
+		auto c = tier.find(checkpoint->cell->cellId);
+		if (c != tier.end())
 		{
 			std::unordered_map<int, Item::SharedCheckpoint>::iterator d = c->second->checkpoints.find(checkpoint->checkpointId);
 			if (d != c->second->checkpoints.end())
@@ -361,8 +405,9 @@ void Grid::removeMapIcon(const Item::SharedMapIcon &mapIcon, bool reassign)
 	bool found = false;
 	if (mapIcon->cell)
 	{
-		std::unordered_map<CellId, SharedCell, pair_hash>::iterator c = cells.find(mapIcon->cell->cellId);
-		if (c != cells.end())
+		auto &tier = tierOf(mapIcon->cell);
+		auto c = tier.find(mapIcon->cell->cellId);
+		if (c != tier.end())
 		{
 			std::unordered_map<int, Item::SharedMapIcon>::iterator m = c->second->mapIcons.find(mapIcon->mapIconId);
 			if (m != c->second->mapIcons.end())
@@ -396,8 +441,9 @@ void Grid::removeObject(const Item::SharedObject &object, bool reassign)
 	bool found = false;
 	if (object->cell)
 	{
-		std::unordered_map<CellId, SharedCell, pair_hash>::iterator c = cells.find(object->cell->cellId);
-		if (c != cells.end())
+		auto &tier = tierOf(object->cell);
+		auto c = tier.find(object->cell->cellId);
+		if (c != tier.end())
 		{
 			std::unordered_map<int, Item::SharedObject>::iterator o = c->second->objects.find(object->objectId);
 			if (o != c->second->objects.end())
@@ -442,8 +488,9 @@ void Grid::removePickup(const Item::SharedPickup &pickup, bool reassign)
 	bool found = false;
 	if (pickup->cell)
 	{
-		std::unordered_map<CellId, SharedCell, pair_hash>::iterator c = cells.find(pickup->cell->cellId);
-		if (c != cells.end())
+		auto &tier = tierOf(pickup->cell);
+		auto c = tier.find(pickup->cell->cellId);
+		if (c != tier.end())
 		{
 			std::unordered_map<int, Item::SharedPickup>::iterator p = c->second->pickups.find(pickup->pickupId);
 			if (p != c->second->pickups.end())
@@ -477,8 +524,9 @@ void Grid::removeRaceCheckpoint(const Item::SharedRaceCheckpoint &raceCheckpoint
 	bool found = false;
 	if (raceCheckpoint->cell)
 	{
-		std::unordered_map<CellId, SharedCell, pair_hash>::iterator c = cells.find(raceCheckpoint->cell->cellId);
-		if (c != cells.end())
+		auto &tier = tierOf(raceCheckpoint->cell);
+		auto c = tier.find(raceCheckpoint->cell->cellId);
+		if (c != tier.end())
 		{
 			std::unordered_map<int, Item::SharedRaceCheckpoint>::iterator r = c->second->raceCheckpoints.find(raceCheckpoint->raceCheckpointId);
 			if (r != c->second->raceCheckpoints.end())
@@ -512,8 +560,9 @@ void Grid::removeTextLabel(const Item::SharedTextLabel &textLabel, bool reassign
 	bool found = false;
 	if (textLabel->cell)
 	{
-		std::unordered_map<CellId, SharedCell, pair_hash>::iterator c = cells.find(textLabel->cell->cellId);
-		if (c != cells.end())
+		auto &tier = tierOf(textLabel->cell);
+		auto c = tier.find(textLabel->cell->cellId);
+		if (c != tier.end())
 		{
 			std::unordered_map<int, Item::SharedTextLabel>::iterator t = c->second->textLabels.find(textLabel->textLabelId);
 			if (t != c->second->textLabels.end())
@@ -570,8 +619,17 @@ CellId Grid::getCellId(const Eigen::Vector2f &position, bool insert)
 }
 
 
-void Grid::processDiscoveredCellsForPlayer(Player &player, std::vector<SharedCell> &playerCells, const std::unordered_set<CellId, pair_hash> &discoveredCells)
+void Grid::processDiscoveredCellsForPlayer(Player &player, std::vector<SharedCell> &playerCells,
+	const std::unordered_set<CellId, pair_hash> &discoveredFineCells,
+	const std::unordered_set<CellId, pair_hash> &discoveredCoarseCells)
 {
+	// Pick the right discovery set based on the item's tier.
+	auto inDiscovery = [&](const SharedCell &itemCell) -> bool
+	{
+		if (!itemCell) return false;
+		const auto &set = itemCell->coarse ? discoveredCoarseCells : discoveredFineCells;
+		return set.find(itemCell->cellId) != set.end();
+	};
 	playerCells.push_back(std::make_shared<Cell>());
 	if (player.enabledItems[STREAMER_TYPE_OBJECT])
 	{
@@ -580,8 +638,7 @@ void Grid::processDiscoveredCellsForPlayer(Player &player, std::vector<SharedCel
 		{
 			if (o->second->cell)
 			{
-				const auto& d = discoveredCells.find(o->second->cell->cellId);
-				if (d != discoveredCells.end())
+				if (inDiscovery(o->second->cell))
 				{
 					o = player.visibleCell->objects.erase(o);
 				}
@@ -604,8 +661,7 @@ void Grid::processDiscoveredCellsForPlayer(Player &player, std::vector<SharedCel
 		{
 			if (c->second->cell)
 			{
-				const auto& d = discoveredCells.find(c->second->cell->cellId);
-				if (d != discoveredCells.end())
+				if (inDiscovery(c->second->cell))
 				{
 					c = player.visibleCell->checkpoints.erase(c);
 				}
@@ -628,8 +684,7 @@ void Grid::processDiscoveredCellsForPlayer(Player &player, std::vector<SharedCel
 		{
 			if (r->second->cell)
 			{
-				const auto& d = discoveredCells.find(r->second->cell->cellId);
-				if (d != discoveredCells.end())
+				if (inDiscovery(r->second->cell))
 				{
 					r = player.visibleCell->raceCheckpoints.erase(r);
 				}
@@ -652,8 +707,7 @@ void Grid::processDiscoveredCellsForPlayer(Player &player, std::vector<SharedCel
 		{
 			if (m->second->cell)
 			{
-				const auto& d = discoveredCells.find(m->second->cell->cellId);
-				if (d != discoveredCells.end())
+				if (inDiscovery(m->second->cell))
 				{
 					m = player.visibleCell->mapIcons.erase(m);
 				}
@@ -676,8 +730,7 @@ void Grid::processDiscoveredCellsForPlayer(Player &player, std::vector<SharedCel
 		{
 			if (t->second->cell)
 			{
-				const auto& d = discoveredCells.find(t->second->cell->cellId);
-				if (d != discoveredCells.end())
+				if (inDiscovery(t->second->cell))
 				{
 					t = player.visibleCell->textLabels.erase(t);
 				}
@@ -700,8 +753,7 @@ void Grid::processDiscoveredCellsForPlayer(Player &player, std::vector<SharedCel
 		{
 			if (a->second->cell)
 			{
-				const auto& d = discoveredCells.find(a->second->cell->cellId);
-				if (d != discoveredCells.end())
+				if (inDiscovery(a->second->cell))
 				{
 					a = player.visibleCell->areas.erase(a);
 				}
@@ -721,30 +773,60 @@ void Grid::processDiscoveredCellsForPlayer(Player &player, std::vector<SharedCel
 
 void Grid::findAllCellsForPlayer(Player &player, std::vector<SharedCell> &playerCells)
 {
-	std::unordered_set<CellId, pair_hash> discoveredCells;
+	std::unordered_set<CellId, pair_hash> discoveredFineCells;
+	std::unordered_set<CellId, pair_hash> discoveredCoarseCells;
+	playerCells.reserve(playerCells.size() + 20); // 9 fine + 9 coarse + global + visible
+	const Eigen::Vector2f base(player.position[0], player.position[1]);
 	for (int i = 0; i < translationMatrix.cols(); ++i)
 	{
-		Eigen::Vector2f position = Eigen::Vector2f(player.position[0], player.position[1]) + translationMatrix.col(i);
-		std::unordered_map<CellId, SharedCell, pair_hash>::iterator c = cells.find(getCellId(position, false));
+		Eigen::Vector2f position = base + translationMatrix.col(i);
+		auto c = cells.find(getCellId(position, false));
 		if (c != cells.end())
 		{
-			discoveredCells.insert(c->first);
+			discoveredFineCells.insert(c->first);
 			playerCells.push_back(c->second);
 		}
 	}
-	processDiscoveredCellsForPlayer(player, playerCells, discoveredCells);
+	if (!coarseCells.empty())
+	{
+		for (int i = 0; i < coarseTranslationMatrix.cols(); ++i)
+		{
+			Eigen::Vector2f position = base + coarseTranslationMatrix.col(i);
+			auto c = coarseCells.find(getCoarseCellId(position, false));
+			if (c != coarseCells.end())
+			{
+				discoveredCoarseCells.insert(c->first);
+				playerCells.push_back(c->second);
+			}
+		}
+	}
+	processDiscoveredCellsForPlayer(player, playerCells, discoveredFineCells, discoveredCoarseCells);
 	playerCells.push_back(globalCell);
 }
 
 void Grid::findMinimalCellsForPlayer(Player &player, std::vector<SharedCell> &playerCells)
 {
+	playerCells.reserve(playerCells.size() + 19);
+	const Eigen::Vector2f base(player.position[0], player.position[1]);
 	for (int i = 0; i < translationMatrix.cols(); ++i)
 	{
-		Eigen::Vector2f position = Eigen::Vector2f(player.position[0], player.position[1]) + translationMatrix.col(i);
-		std::unordered_map<CellId, SharedCell, pair_hash>::iterator c = cells.find(getCellId(position, false));
+		Eigen::Vector2f position = base + translationMatrix.col(i);
+		auto c = cells.find(getCellId(position, false));
 		if (c != cells.end())
 		{
 			playerCells.push_back(c->second);
+		}
+	}
+	if (!coarseCells.empty())
+	{
+		for (int i = 0; i < coarseTranslationMatrix.cols(); ++i)
+		{
+			Eigen::Vector2f position = base + coarseTranslationMatrix.col(i);
+			auto c = coarseCells.find(getCoarseCellId(position, false));
+			if (c != coarseCells.end())
+			{
+				playerCells.push_back(c->second);
+			}
 		}
 	}
 	playerCells.push_back(globalCell);
@@ -752,13 +834,26 @@ void Grid::findMinimalCellsForPlayer(Player &player, std::vector<SharedCell> &pl
 
 void Grid::findMinimalCellsForPoint(const Eigen::Vector2f &point, std::vector<SharedCell> &pointCells)
 {
+	pointCells.reserve(pointCells.size() + 19);
 	for (int i = 0; i < translationMatrix.cols(); ++i)
 	{
 		Eigen::Vector2f position = point + translationMatrix.col(i);
-		std::unordered_map<CellId, SharedCell, pair_hash>::iterator c = cells.find(getCellId(position, false));
+		auto c = cells.find(getCellId(position, false));
 		if (c != cells.end())
 		{
 			pointCells.push_back(c->second);
+		}
+	}
+	if (!coarseCells.empty())
+	{
+		for (int i = 0; i < coarseTranslationMatrix.cols(); ++i)
+		{
+			Eigen::Vector2f position = point + coarseTranslationMatrix.col(i);
+			auto c = coarseCells.find(getCoarseCellId(position, false));
+			if (c != coarseCells.end())
+			{
+				pointCells.push_back(c->second);
+			}
 		}
 	}
 	pointCells.push_back(globalCell);
@@ -766,10 +861,19 @@ void Grid::findMinimalCellsForPoint(const Eigen::Vector2f &point, std::vector<Sh
 
 void Grid::findMinimalCellsForPoint(const Eigen::Vector2f &point, std::vector<SharedCell> &pointCells, float range)
 {
-	for (std::unordered_map<CellId, SharedCell, pair_hash>::iterator c = cells.begin(); c != cells.end(); ++c)
+	for (auto c = cells.begin(); c != cells.end(); ++c)
 	{
 		Eigen::Vector2f corner(static_cast<float>(c->first.first) - (cellSize / 2.0f), static_cast<float>(c->first.second) - (cellSize / 2.0f));
 		Eigen::Vector2f delta(point[0] - std::max(corner[0], std::min(point[0], corner[0] + cellSize)), point[1] - std::max(corner[1], std::min(point[1], corner[1] + cellSize)));
+		if (((delta[0] * delta[0]) + (delta[1] * delta[1])) < range)
+		{
+			pointCells.push_back(c->second);
+		}
+	}
+	for (auto c = coarseCells.begin(); c != coarseCells.end(); ++c)
+	{
+		Eigen::Vector2f corner(static_cast<float>(c->first.first) - (coarseCellSize / 2.0f), static_cast<float>(c->first.second) - (coarseCellSize / 2.0f));
+		Eigen::Vector2f delta(point[0] - std::max(corner[0], std::min(point[0], corner[0] + coarseCellSize)), point[1] - std::max(corner[1], std::min(point[1], corner[1] + coarseCellSize)));
 		if (((delta[0] * delta[0]) + (delta[1] * delta[1])) < range)
 		{
 			pointCells.push_back(c->second);

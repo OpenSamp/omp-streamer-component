@@ -83,57 +83,6 @@ namespace Item
 	typedef std::shared_ptr<RaceCheckpoint> SharedRaceCheckpoint;
 	typedef std::shared_ptr<TextLabel> SharedTextLabel;
 
-	template<typename T>
-	struct Hash
-	{
-		std::size_t operator()(std::tuple<int, T> const &t) const
-		{
-			std::size_t seed = 0;
-			boost::hash_combine(seed, std::get<0>(t));
-			boost::hash_combine(seed, std::get<1>(t));
-			return seed;
-		}
-	};
-
-	struct PairCompare
-	{
-		bool operator()(std::pair<int, float> const &a, std::pair<int, float> const &b) const
-		{
-			if (a.first != b.first)
-			{
-				return a.first > b.first;
-			}
-			return a.second < b.second;
-		}
-	};
-
-	template<typename T>
-	struct LeftTupleCompare
-	{
-		bool operator()(std::tuple<int, float> const &a, std::tuple<int, float> const &b) const
-		{
-			if (std::get<0>(a) != std::get<0>(b))
-			{
-				return std::get<0>(a) > std::get<0>(b);
-			}
-			return std::get<1>(a) < std::get<1>(b);
-		}
-	};
-
-	template<typename T>
-	struct RightTupleCompare
-	{
-		bool operator()(std::tuple<int, T> const &a, std::tuple<int, T> const &b) const
-		{
-			return std::get<0>(a) == std::get<0>(b) && std::get<1>(a) == std::get<1>(b);
-		}
-	};
-
-	template<typename T>
-	struct Bimap
-	{
-		typedef boost::bimap<boost::bimaps::multiset_of<std::tuple<int, float>, LeftTupleCompare<T> >, boost::bimaps::unordered_set_of<std::tuple<int, T>, Hash<T>, RightTupleCompare<T> > > Type;
-	};
 }
 
 namespace boost { namespace geometry { namespace traits {

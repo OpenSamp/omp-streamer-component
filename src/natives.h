@@ -51,6 +51,13 @@ namespace Natives
 	cell AMX_NATIVE_CALL Streamer_SetCellDistance(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_GetCellSize(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_SetCellSize(AMX *amx, cell *params);
+	// Coarse (tier-2) cell config (VS:RP fork). Items whose stream distance falls
+	// between cellDistance and coarseCellDistance live in coarser cells instead of
+	// the catch-all globalCell. Setting distance = 0 disables the tier.
+	cell AMX_NATIVE_CALL Streamer_GetCoarseCellSize(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL Streamer_SetCoarseCellSize(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL Streamer_GetCoarseCellDistance(AMX *amx, cell *params);
+	cell AMX_NATIVE_CALL Streamer_SetCoarseCellDistance(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_ToggleItemStatic(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_IsToggleItemStatic(AMX *amx, cell *params);
 	cell AMX_NATIVE_CALL Streamer_ToggleItemInvAreas(AMX *amx, cell *params);
