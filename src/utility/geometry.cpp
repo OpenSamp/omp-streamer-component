@@ -30,7 +30,7 @@ namespace
 
 bool Utility::doesLineSegmentIntersectArea(const Eigen::Vector3f &lineSegmentStart, const Eigen::Vector3f &lineSegmentEnd, const Item::SharedArea &area)
 {
-	Eigen::Vector2f height = area->height;
+	Eigen::Vector2f heightRange = area->height;
 	std::variant<Polygon2d, Box2d, Box3d, Eigen::Vector2f, Eigen::Vector3f> position;
 	if (area->attach)
 	{
@@ -49,7 +49,7 @@ bool Utility::doesLineSegmentIntersectArea(const Eigen::Vector3f &lineSegmentSta
 		case STREAMER_AREA_TYPE_CYLINDER:
 		{
 			Box2d box2d = Box2d(Eigen::Vector2f(std::get<Eigen::Vector2f>(position)[0] - area->size, std::get<Eigen::Vector2f>(position)[1] - area->size), Eigen::Vector2f(std::get<Eigen::Vector2f>(position)[0] + area->size, std::get<Eigen::Vector2f>(position)[1] + area->size));
-			Box3d box3d = Box3d(Eigen::Vector3f(box2d.min_corner()[0], box2d.min_corner()[1], height[0]), Eigen::Vector3f(box2d.max_corner()[0], box2d.max_corner()[1], height[1]));
+			Box3d box3d = Box3d(Eigen::Vector3f(box2d.min_corner()[0], box2d.min_corner()[1], heightRange[0]), Eigen::Vector3f(box2d.max_corner()[0], box2d.max_corner()[1], heightRange[1]));
 			return doesLineSegmentIntersectBox(lineSegmentStart, lineSegmentEnd, box3d);
 		}
 		case STREAMER_AREA_TYPE_SPHERE:
@@ -67,7 +67,7 @@ bool Utility::doesLineSegmentIntersectArea(const Eigen::Vector3f &lineSegmentSta
 		case STREAMER_AREA_TYPE_POLYGON:
 		{
 			Box2d box2d = boost::geometry::return_envelope<Box2d>(std::get<Polygon2d>(position));
-			Box3d box3d = Box3d(Eigen::Vector3f(box2d.min_corner()[0], box2d.min_corner()[1], height[0]), Eigen::Vector3f(box2d.max_corner()[0], box2d.max_corner()[1], height[1]));
+			Box3d box3d = Box3d(Eigen::Vector3f(box2d.min_corner()[0], box2d.min_corner()[1], heightRange[0]), Eigen::Vector3f(box2d.max_corner()[0], box2d.max_corner()[1], heightRange[1]));
 			return doesLineSegmentIntersectBox(lineSegmentStart, lineSegmentEnd, box3d);
 		}
 	}

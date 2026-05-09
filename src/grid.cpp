@@ -721,7 +721,8 @@ void Grid::processDiscoveredCellsForPlayer(Player &player, std::vector<SharedCel
 
 void Grid::findAllCellsForPlayer(Player &player, std::vector<SharedCell> &playerCells)
 {
-	playerCells.reserve(playerCells.size() + translationMatrix.cols() + 2);
+	const int extraCells = 2; // processDiscoveredCellsForPlayer temp cell + global cell
+	playerCells.reserve(playerCells.size() + translationMatrix.cols() + extraCells);
 	std::unordered_set<CellId, pair_hash> discoveredCells;
 	for (int i = 0; i < translationMatrix.cols(); ++i)
 	{
@@ -739,7 +740,8 @@ void Grid::findAllCellsForPlayer(Player &player, std::vector<SharedCell> &player
 
 void Grid::findMinimalCellsForPlayer(Player &player, std::vector<SharedCell> &playerCells)
 {
-	playerCells.reserve(playerCells.size() + translationMatrix.cols() + 1);
+	const int extraCells = 1; // global cell
+	playerCells.reserve(playerCells.size() + translationMatrix.cols() + extraCells);
 	for (int i = 0; i < translationMatrix.cols(); ++i)
 	{
 		Eigen::Vector2f position = Eigen::Vector2f(player.position[0], player.position[1]) + translationMatrix.col(i);
@@ -754,7 +756,8 @@ void Grid::findMinimalCellsForPlayer(Player &player, std::vector<SharedCell> &pl
 
 void Grid::findMinimalCellsForPoint(const Eigen::Vector2f &point, std::vector<SharedCell> &pointCells)
 {
-	pointCells.reserve(pointCells.size() + translationMatrix.cols() + 1);
+	const int extraCells = 1; // global cell
+	pointCells.reserve(pointCells.size() + translationMatrix.cols() + extraCells);
 	for (int i = 0; i < translationMatrix.cols(); ++i)
 	{
 		Eigen::Vector2f position = point + translationMatrix.col(i);
