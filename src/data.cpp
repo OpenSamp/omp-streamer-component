@@ -214,9 +214,5 @@ bool Data::findCachedPublic(AMX *amx, const char *name, int &index)
 
 void Data::clearCachedPublics(AMX *amx)
 {
-	std::unordered_map<AMX*, std::unordered_map<std::string, int> >::iterator c = cachedPublics.find(amx);
-	if (c != cachedPublics.end())
-	{
-		cachedPublics.erase(c);
-	}
+	cachedPublics.erase(amx);
 }
