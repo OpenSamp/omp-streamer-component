@@ -414,7 +414,7 @@ void Streamer::executeCallbacks()
 				for (std::set<AMX*>::iterator i = core->getData()->interfaces.begin(); i != core->getData()->interfaces.end(); ++i)
 				{
 					int amxIndex = 0;
-					if (!amx_FindPublic(*i, "OnPlayerLeaveDynamicArea", &amxIndex))
+					if (core->getData()->findCachedPublic(*i, "OnPlayerLeaveDynamicArea", amxIndex))
 					{
 						amx_Push(*i, static_cast<cell>(std::get<0>(c->second)));
 						amx_Push(*i, static_cast<cell>(std::get<1>(c->second)));
@@ -436,7 +436,7 @@ void Streamer::executeCallbacks()
 				for (std::set<AMX*>::iterator i = core->getData()->interfaces.begin(); i != core->getData()->interfaces.end(); ++i)
 				{
 					int amxIndex = 0;
-					if (!amx_FindPublic(*i, "OnPlayerEnterDynamicArea", &amxIndex))
+					if (core->getData()->findCachedPublic(*i, "OnPlayerEnterDynamicArea", amxIndex))
 					{
 						amx_Push(*i, static_cast<cell>(std::get<0>(c->second)));
 						amx_Push(*i, static_cast<cell>(std::get<1>(c->second)));
@@ -458,7 +458,7 @@ void Streamer::executeCallbacks()
 				for (std::set<AMX*>::iterator i = core->getData()->interfaces.begin(); i != core->getData()->interfaces.end(); ++i)
 				{
 					int amxIndex = 0;
-					if (!amx_FindPublic(*i, "OnDynamicObjectMoved", &amxIndex))
+					if (core->getData()->findCachedPublic(*i, "OnDynamicObjectMoved", amxIndex))
 					{
 						amx_Push(*i, static_cast<cell>(*c));
 						amx_Exec(*i, NULL, amxIndex);
@@ -527,7 +527,7 @@ void Streamer::executeCallbacks()
 			for (std::set<AMX*>::iterator i = core->getData()->interfaces.begin(); i != core->getData()->interfaces.end(); ++i)
 			{
 				int amxIndex = 0;
-				if (!amx_FindPublic(*i, "Streamer_OnItemStreamIn", &amxIndex))
+				if (core->getData()->findCachedPublic(*i, "Streamer_OnItemStreamIn", amxIndex))
 				{
 					amx_Push(*i, static_cast<cell>(std::get<2>(*c)));
 					amx_Push(*i, static_cast<cell>(std::get<1>(*c)));
@@ -597,7 +597,7 @@ void Streamer::executeCallbacks()
 			for (std::set<AMX*>::iterator i = core->getData()->interfaces.begin(); i != core->getData()->interfaces.end(); ++i)
 			{
 				int amxIndex = 0;
-				if (!amx_FindPublic(*i, "Streamer_OnItemStreamOut", &amxIndex))
+				if (core->getData()->findCachedPublic(*i, "Streamer_OnItemStreamOut", amxIndex))
 				{
 					amx_Push(*i, static_cast<cell>(std::get<2>(*c)));
 					amx_Push(*i, static_cast<cell>(std::get<1>(*c)));

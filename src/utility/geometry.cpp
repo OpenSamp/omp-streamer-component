@@ -21,18 +21,23 @@
 
 using namespace Utility;
 
+namespace
+{
+	constexpr float kPi = 3.14159265358979323846f;
+	constexpr float kDegToRad = kPi / 180.0f;
+	constexpr float kRadToDeg = 180.0f / kPi;
+}
+
 bool Utility::doesLineSegmentIntersectArea(const Eigen::Vector3f &lineSegmentStart, const Eigen::Vector3f &lineSegmentEnd, const Item::SharedArea &area)
 {
-	Eigen::Vector2f height = Eigen::Vector2f::Zero();
+	Eigen::Vector2f height = area->height;
 	std::variant<Polygon2d, Box2d, Box3d, Eigen::Vector2f, Eigen::Vector3f> position;
 	if (area->attach)
 	{
-		height = area->height;
 		position = area->attach->position;
 	}
 	else
 	{
-		height = area->height;
 		position = area->position;
 	}
 	switch (area->type)
@@ -202,15 +207,16 @@ void Utility::projectPoint(const Eigen::Vector3f &point, const std::variant<floa
 
 void Utility::projectPoint(const Eigen::Vector3f &point, const float &heading, Eigen::Vector3f &position)
 {
-	float angle = (std::atan2(point[0], point[1]) * (180.0f / (std::atan(1.0f) * 4.0f))) - heading, distance = std::sqrt((point[0] * point[0]) + (point[1] * point[1]));
-	position[0] += distance * std::sin(angle * ((std::atan(1.0f) * 4.0f) / 180.0f));
-	position[1] += distance * std::cos(angle * ((std::atan(1.0f) * 4.0f) / 180.0f));
+	float angle = (std::atan2(point[0], point[1]) * kRadToDeg) - heading;
+	float distance = std::sqrt((point[0] * point[0]) + (point[1] * point[1]));
+	position[0] += distance * std::sin(angle * kDegToRad);
+	position[1] += distance * std::cos(angle * kDegToRad);
 	position[2] += point[2];
 }
 
 void Utility::projectPoint(const Eigen::Vector3f &point, const Eigen::Vector3f &rotation, Eigen::Vector3f &position)
 {
-	Eigen::Vector3f rotRad = rotation * ((std::atan(1.0f) * 4.0f) / 180.0f), rotCos(std::cos(rotRad[0]), std::cos(rotRad[1]), std::cos(rotRad[2])), rotSin(std::sin(rotRad[0]), std::sin(rotRad[1]), std::sin(rotRad[2]));
+	Eigen::Vector3f rotRad = rotation * kDegToRad, rotCos(std::cos(rotRad[0]), std::cos(rotRad[1]), std::cos(rotRad[2])), rotSin(std::sin(rotRad[0]), std::sin(rotRad[1]), std::sin(rotRad[2]));
 	position[0] += (point[0] * rotCos[1] * rotCos[2]) - (point[0] * rotSin[0] * rotSin[1] * rotSin[2]) - (point[1] * rotCos[0] * rotSin[2]) + (point[2] * rotSin[1] * rotCos[2]) + (point[2] * rotSin[0] * rotCos[1] * rotSin[2]);
 	position[1] += (point[0] * rotCos[1] * rotSin[2]) + (point[0] * rotSin[0] * rotSin[1] * rotCos[2]) + (point[1] * rotCos[0] * rotCos[2]) + (point[2] * rotSin[1] * rotSin[2]) - (point[2] * rotSin[0] * rotCos[1] * rotCos[2]);
 	position[2] += -(point[0] * rotCos[0] * rotSin[1]) + (point[1] * rotSin[0]) + (point[2] * rotCos[0] * rotCos[1]);

@@ -214,7 +214,7 @@ void Utility::executeFinalAreaCallbacks(int areaid)
 		for (std::set<AMX*>::iterator amx = core->getData()->interfaces.begin(); amx != core->getData()->interfaces.end(); ++amx)
 		{
 			int amxIndex = 0;
-			if (!amx_FindPublic(*amx, "OnPlayerLeaveDynamicArea", &amxIndex))
+			if (core->getData()->findCachedPublic(*amx, "OnPlayerLeaveDynamicArea", amxIndex))
 			{
 				amx_Push(*amx, static_cast<cell>(std::get<0>(*c)));
 				amx_Push(*amx, static_cast<cell>(std::get<1>(*c)));
@@ -246,7 +246,7 @@ void Utility::executeFinalAreaCallbacksForAllAreas(AMX *amx, bool ignoreInterfac
 		for (std::set<AMX*>::iterator a = core->getData()->interfaces.begin(); a != core->getData()->interfaces.end(); ++a)
 		{
 			int amxIndex = 0;
-			if (!amx_FindPublic(*a, "OnPlayerLeaveDynamicArea", &amxIndex))
+			if (core->getData()->findCachedPublic(*a, "OnPlayerLeaveDynamicArea", amxIndex))
 			{
 				amx_Push(*a, static_cast<cell>(std::get<0>(*c)));
 				amx_Push(*a, static_cast<cell>(std::get<1>(*c)));
@@ -270,7 +270,7 @@ void Utility::logError(const char *format, ...)
 		{
 			cell amxAddress = 0;
 			int amxIndex = 0;
-			if (!amx_FindPublic(*a, "Streamer_OnPluginError", &amxIndex))
+			if (core->getData()->findCachedPublic(*a, "Streamer_OnPluginError", amxIndex))
 			{
 				amx_PushString(*a, &amxAddress, NULL, buffer, 0, 0);
 				amx_Exec(*a, NULL, amxIndex);

@@ -208,6 +208,7 @@ namespace
 			}
 			core->getData()->interfaces.insert(amx);
 			core->getData()->amxUnloadDestroyItems.insert(amx);
+			core->getData()->clearCachedPublics(amx);
 			Utility::checkInterfaceAndRegisterNatives(amx, gStreamerNatives);
 		}
 
@@ -224,6 +225,7 @@ namespace
 				Utility::destroyAllItemsInInterface(amx);
 				core->getData()->amxUnloadDestroyItems.erase(amx);
 			}
+			core->getData()->clearCachedPublics(amx);
 		}
 
 		// --- PlayerConnectEventHandler ------------------------------------------------------

@@ -44,7 +44,7 @@ namespace
 		for (AMX *amx : core->getData()->interfaces)
 		{
 			int idx = 0;
-			if (!amx_FindPublic(amx, name, &idx))
+			if (core->getData()->findCachedPublic(amx, name, idx))
 			{
 				pushArgsRev(amx, args...);
 				amx_Exec(amx, nullptr, idx);
@@ -60,7 +60,7 @@ namespace
 		for (AMX *amx : core->getData()->interfaces)
 		{
 			int idx = 0;
-			if (!amx_FindPublic(amx, name, &idx))
+			if (core->getData()->findCachedPublic(amx, name, idx))
 			{
 				pushArgsRev(amx, args...);
 				cell ret = 0;
@@ -82,7 +82,7 @@ namespace
 		for (AMX *amx : core->getData()->interfaces)
 		{
 			int idx = 0;
-			if (!amx_FindPublic(amx, name, &idx))
+			if (core->getData()->findCachedPublic(amx, name, idx))
 			{
 				pushArgsRev(amx, args...);
 				cell ret = 0;

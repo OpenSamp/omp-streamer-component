@@ -61,11 +61,15 @@ public:
 	std::unordered_map<int, Player> players;
 
 	std::vector<int> typePriority;
+
+	bool findCachedPublic(AMX *amx, const char *name, int &index);
+	void clearCachedPublics(AMX *amx);
 private:
 	std::size_t globalChunkTickRate[STREAMER_MAX_TYPES];
 	std::size_t globalMaxItems[STREAMER_MAX_TYPES];
 	std::size_t globalMaxVisibleItems[STREAMER_MAX_TYPES];
 	float globalRadiusMultipliers[STREAMER_MAX_TYPES];
+	std::unordered_map<AMX*, std::unordered_map<std::string, int> > cachedPublics;
 };
 
 #endif
