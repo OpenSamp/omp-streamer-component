@@ -186,12 +186,12 @@ bool Data::setGlobalRadiusMultiplier(int type, float value)
 
 bool Data::findCachedPublic(AMX *amx, const char *name, int &index)
 {
-	std::unordered_map<AMX*, std::unordered_map<std::string, int> >::iterator c = cachedPublics.find(amx);
+	auto c = cachedPublics.find(amx);
 	if (c == cachedPublics.end())
 	{
 		c = cachedPublics.insert(std::make_pair(amx, std::unordered_map<std::string, int>())).first;
 	}
-	std::unordered_map<std::string, int>::iterator p = c->second.find(name);
+	auto p = c->second.find(name);
 	if (p == c->second.end())
 	{
 		int publicIndex = 0;

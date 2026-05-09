@@ -31,15 +31,7 @@ namespace
 bool Utility::doesLineSegmentIntersectArea(const Eigen::Vector3f &lineSegmentStart, const Eigen::Vector3f &lineSegmentEnd, const Item::SharedArea &area)
 {
 	Eigen::Vector2f heightRange = area->height;
-	std::variant<Polygon2d, Box2d, Box3d, Eigen::Vector2f, Eigen::Vector3f> position;
-	if (area->attach)
-	{
-		position = area->attach->position;
-	}
-	else
-	{
-		position = area->position;
-	}
+	std::variant<Polygon2d, Box2d, Box3d, Eigen::Vector2f, Eigen::Vector3f> position = area->attach ? area->attach->position : area->position;
 	switch (area->type)
 	{
 		case STREAMER_AREA_TYPE_CIRCLE:
