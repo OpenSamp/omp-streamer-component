@@ -1,12 +1,12 @@
 [submodule "lib/cmake-modules"]
 	path = lib/cmake-modules
-	url = git@github.com:AmyrAhmady/samp-cmake-modules.git
+	url = https://github.com/AmyrAhmady/samp-cmake-modules.git
 [submodule "lib/eigen"]
 	path = lib/eigen
-	url = git@github.com:eigenteam/eigen-git-mirror.git
+	url = https://github.com/eigenteam/eigen-git-mirror.git
 [submodule "lib/boost"]
 	path = lib/boost
-	url = git@github.com:scipy/boost-headers-only.git
+	url = https://github.com/scipy/boost-headers-only.git
 [submodule "lib/open.mp-sdk"]
 	path = lib/open.mp-sdk
-	url = git@github.com:openmultiplayer/open.mp-sdk.git
+	url = https://github.com/openmultiplayer/open.mp-sdk.git
