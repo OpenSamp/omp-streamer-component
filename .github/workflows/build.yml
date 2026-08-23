@@ -46,8 +46,12 @@ jobs:
       - name: Configure
         shell: bash
         run: |
+          # No -G on purpose: CMake selects the newest Visual Studio installed on
+          # the runner. Pinning "Visual Studio 17 2022" broke once windows-latest
+          # moved to VS 18 and stopped shipping that generator, and pinning the
+          # runner image instead only moves the expiry date. -A still picks the
+          # target architecture.
           cmake -B build \
-            -G "Visual Studio 17 2022" \
             -A ${{ steps.arch.outputs.cmake_arch }} \
             -DSTREAMER_ARCH=${{ matrix.arch }} \
             "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
