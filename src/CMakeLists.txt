@@ -36,6 +36,13 @@ set_source_files_properties(${PROJECT_SOURCE_DIR}/lib/pawn/amxplugin.cpp PROPERT
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE main.h)
 
+# C++20/clang override shadow for a handful of vendored boost 1.75 headers that
+# are ill-formed on modern clang (see patches/boost-cxx20/README). Must come
+# BEFORE lib/boost so these copies win the include lookup; the submodule stays clean.
+target_include_directories(${PROJECT_NAME} BEFORE PRIVATE
+	${PROJECT_SOURCE_DIR}/patches/boost-cxx20
+)
+
 target_include_directories(${PROJECT_NAME} PRIVATE
 	${PROJECT_SOURCE_DIR}/lib/pawn
 	${PROJECT_SOURCE_DIR}/lib/pawn/amx
@@ -62,6 +69,11 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 if(MSVC)
 	target_compile_options(${PROJECT_NAME} PRIVATE
 		/W4
+		# Enable C++ exceptions explicitly. MSVC gets /EHsc by default, but clang-cl
+		# does NOT, so without this boost switches to its BOOST_NO_EXCEPTIONS mode and
+		# leaves boost::throw_exception undefined -> link error. Keeps clang-cl and
+		# MSVC behaviour identical (boost::geometry throws rather than terminating).
+		/EHsc
 		# Third-party spam leaking through PCH:
 		/wd4127 # conditional expression is constant (boost::geometry template chain)
 		/wd4201 # nonstandard extension: nameless struct/union (glm/open.mp types)
