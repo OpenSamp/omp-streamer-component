@@ -19,6 +19,7 @@
 #include "streamer.h"
 #include "core.h"
 #include "streamer_component_api.h"
+#include "openmp_component.h" // FLOOD DIAGNOSTIC: StreamerRuntime::diagLog
 
 namespace
 {
@@ -184,6 +185,46 @@ void Streamer::startAutomaticUpdate()
 			}
 			executeCallbacks();
 			tickCount = 0;
+		}
+		// --- FLOOD DIAGNOSTIC (temporary; remove after root-cause) ---
+		// Once per second, log any player whose per-second object stream-in rate is
+		// abnormally high, together with the state that distinguishes the cause:
+		//   creates>>destroys & distinctIds<<creates  -> same objects re-created (tracking/thrash)
+		//   distinctIds ~= creates                    -> genuine churn (position/world instability or leak)
+		//   internal==curVis<maxVis                   -> currentVisibleObjects ratcheted down (cap thrash)
+		{
+			static std::chrono::steady_clock::time_point diagLast = currentTime;
+			static const std::size_t diagThreshold = 150; // object creates/sec above which we log
+			if (std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - diagLast).count() >= 1000)
+			{
+				for (std::unordered_map<int, Player>::iterator dp = core->getData()->players.begin(); dp != core->getData()->players.end(); ++dp)
+				{
+					Player &pl = dp->second;
+					if (pl.diagObjCreates >= diagThreshold)
+					{
+						int topId = -1, topCount = 0;
+						for (std::unordered_map<int, int>::iterator it = pl.diagObjCreateIds.begin(); it != pl.diagObjCreateIds.end(); ++it)
+						{
+							if (it->second > topCount)
+							{
+								topCount = it->second;
+								topId = it->first;
+							}
+						}
+						char diagBuf[320];
+						std::snprintf(diagBuf, sizeof(diagBuf),
+							"[StreamerDiag] player %d creates=%d destroys=%d distinctIds=%d topObjId=%d x%d | internal=%d curVis=%d maxVis=%d pos=(%.1f,%.1f,%.1f) world=%d int=%d",
+							pl.playerId, (int)pl.diagObjCreates, (int)pl.diagObjDestroys, (int)pl.diagObjCreateIds.size(),
+							topId, topCount, (int)pl.internalObjects.size(), (int)pl.currentVisibleObjects, (int)pl.maxVisibleObjects,
+							(double)pl.position[0], (double)pl.position[1], (double)pl.position[2], pl.worldId, pl.interiorId);
+						StreamerRuntime::diagLog(diagBuf);
+					}
+					pl.diagObjCreates = 0;
+					pl.diagObjDestroys = 0;
+					pl.diagObjCreateIds.clear();
+				}
+				diagLast = currentTime;
+			}
 		}
 		calculateAverageElapsedTime();
 		lastUpdateTime = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - currentTime).count();
@@ -1063,6 +1104,7 @@ void Streamer::processObjects(Player &player, const std::vector<SharedCell> &cel
 				if (i != player.internalObjects.end())
 				{
 					StreamerApi::DestroyPlayerObject(player.playerId, i->second);
+					++player.diagObjDestroys; // FLOOD DIAGNOSTIC
 					++phaseStreamOutCount[STREAMER_TYPE_OBJECT];
 					if (o->second->streamCallbacks)
 					{
@@ -1106,6 +1148,7 @@ void Streamer::processObjects(Player &player, const std::vector<SharedCell> &cel
 					if (j != player.internalObjects.end())
 					{
 						StreamerApi::DestroyPlayerObject(player.playerId, j->second);
+						++player.diagObjDestroys; // FLOOD DIAGNOSTIC
 						if (e.second->streamCallbacks)
 						{
 							streamOutCallbacks.push_back(std::make_tuple(STREAMER_TYPE_OBJECT, e.second->objectId, player.playerId));
@@ -1131,6 +1174,8 @@ void Streamer::processObjects(Player &player, const std::vector<SharedCell> &cel
 			player.currentVisibleObjects = player.internalObjects.size();
 			break;
 		}
+		++player.diagObjCreates; // FLOOD DIAGNOSTIC
+		++player.diagObjCreateIds[d.second->objectId]; // FLOOD DIAGNOSTIC
 		++phaseStreamInCount[STREAMER_TYPE_OBJECT];
 		if (d.second->streamCallbacks)
 		{

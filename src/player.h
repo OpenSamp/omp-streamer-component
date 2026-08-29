@@ -78,6 +78,13 @@ struct Player
 	std::unordered_set<int> removedObjects;
 	std::unordered_set<int> removedTextLabels;
 
+	// --- FLOOD DIAGNOSTIC (temporary; remove after root-cause) ---
+	// Per-second counters of object stream-in/out RPCs, plus how many times each
+	// dynamic objectId was (re)created in the window. Logged by Streamer::startAutomaticUpdate.
+	std::size_t diagObjCreates = 0;
+	std::size_t diagObjDestroys = 0;
+	std::unordered_map<int, int> diagObjCreateIds;
+
 	Identifier mapIconIdentifier;
 
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW

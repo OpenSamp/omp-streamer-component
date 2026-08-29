@@ -39,6 +39,9 @@ namespace StreamerRuntime
 	IActorsComponent *actors();
 	ICheckpointsComponent *checkpoints();
 	IClassesComponent *classes();
+
+	// FLOOD DIAGNOSTIC (temporary): print a pre-formatted line via the runtime core.
+	void diagLog(const char *msg);
 }
 
 #endif

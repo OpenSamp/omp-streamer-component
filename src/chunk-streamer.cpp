@@ -334,6 +334,7 @@ void ChunkStreamer::streamObjects(Player &player, bool automatic)
 				if (i != player.internalObjects.end())
 				{
 					StreamerApi::DestroyPlayerObject(player.playerId, i->second);
+					++player.diagObjDestroys; // FLOOD DIAGNOSTIC
 					std::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(*r);
 					if (o != core->getData()->objects.end())
 					{
@@ -392,6 +393,7 @@ void ChunkStreamer::streamObjects(Player &player, bool automatic)
 							if (j != player.internalObjects.end())
 							{
 								StreamerApi::DestroyPlayerObject(player.playerId, j->second);
+								++player.diagObjDestroys; // FLOOD DIAGNOSTIC
 								if (worst->streamCallbacks)
 								{
 									streamOutCallbacks.push_back(std::make_tuple(STREAMER_TYPE_OBJECT, worstId, player.playerId));
@@ -417,6 +419,8 @@ void ChunkStreamer::streamObjects(Player &player, bool automatic)
 					streamingCanceled = true;
 					break;
 				}
+				++player.diagObjCreates; // FLOOD DIAGNOSTIC
+				++player.diagObjCreateIds[objId]; // FLOOD DIAGNOSTIC
 				if (obj->streamCallbacks)
 				{
 					streamInCallbacks.push_back(std::make_tuple(STREAMER_TYPE_OBJECT, objId, player.playerId));
