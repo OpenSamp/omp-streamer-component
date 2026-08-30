@@ -36,11 +36,15 @@ Data::Data()
 	// 0.3.7/open.mp per-player object pool. Below this, the streamer silently drops the farthest
 	// items so the effective stream radius looks smaller than what Streamer_SetCellDistance /
 	// per-item streamDistance suggested.
-	// Keep this well BELOW OBJECT_POOL_SIZE_037 (1000). Setting it == the 0.3.7 client
-	// pool made the streamer fill the pool in dense areas, so CreatePlayerObject failed at
-	// the boundary, ratcheted currentVisibleObjects down (see streamer.cpp) and thrashed
-	// create/destroy every tick (~1000 RPCs/s -> tripped acks_limit). 500 = Incognito default.
-	globalMaxVisibleItems[STREAMER_TYPE_OBJECT] = 500;
+	// Must stay BELOW the client's per-player object pool (OBJECT_POOL_SIZE_037 = 1000 for a
+	// 0.3.7 client, 2000 for an open.mp client), with headroom for a player's other objects
+	// (attached accessories etc.). Setting it == the 0.3.7 pool (1000) made the streamer fill
+	// the pool in dense areas, CreatePlayerObject failed at the boundary and it thrashed
+	// create/destroy (~1000 RPCs/s -> tripped acks_limit). BUT too low (500) under-streams dense
+	// RP zones: >500 objects in range means only the 500 closest show, so landmarks pop in only
+	// up close. 850 leaves ~150 headroom below the 1000 pool while covering ~70% more objects.
+	// (Proper fix for large landmarks is a bigger per-object streamDistance/priority in map data.)
+	globalMaxVisibleItems[STREAMER_TYPE_OBJECT] = 850;
 	globalMaxVisibleItems[STREAMER_TYPE_PICKUP] = 4096;
 	globalMaxVisibleItems[STREAMER_TYPE_MAP_ICON] = 100;
 	globalMaxVisibleItems[STREAMER_TYPE_3D_TEXT_LABEL] = 1024;
