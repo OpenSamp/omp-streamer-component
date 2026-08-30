@@ -29,6 +29,16 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
+# Link-time optimization for Release only (cross-TU inlining/devirtualization on the hot
+# streaming loop; Debug stays fast). Gracefully skipped if the toolchain can't do IPO.
+include(CheckIPOSupported)
+check_ipo_supported(RESULT _streamer_ipo_ok OUTPUT _streamer_ipo_msg LANGUAGES CXX)
+if(_streamer_ipo_ok)
+	set_property(TARGET ${PROJECT_NAME} PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+else()
+	message(WARNING "Streamer: IPO/LTO unavailable, building without it: ${_streamer_ipo_msg}")
+endif()
+
 # amxplugin.cpp is a thin C-style dispatcher; skip PCH for it.
 set_source_files_properties(${PROJECT_SOURCE_DIR}/lib/pawn/amxplugin.cpp PROPERTIES
 	SKIP_PRECOMPILE_HEADERS ON
