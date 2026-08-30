@@ -97,7 +97,12 @@ void Streamer::calculateAverageElapsedTime()
 
 void Streamer::startAutomaticUpdate()
 {
-	if (!core->getData()->interfaces.empty())
+	// Run whenever there is streaming to do: any player online OR any Pawn script loaded.
+	// The old gate keyed solely on a loaded AMX (interfaces), so a pure-C# server (SampSharp
+	// drives this component through the C-exports, with no gameplay Pawn) only streamed by
+	// accident — because open.mp still loads a stub gamemode AMX. Drop that stub and streaming
+	// silently dies. This only broadens when the loop runs; the inner branches are unchanged.
+	if (!core->getData()->players.empty() || !core->getData()->interfaces.empty())
 	{
 		std::chrono::steady_clock::time_point currentTime = std::chrono::steady_clock::now();
 		if (!core->getData()->players.empty())
