@@ -1005,20 +1005,12 @@ int Manipulation::setFloatData(AMX *amx, cell *params)
 									std::unordered_map<int, int>::iterator j = p->second.internalObjects.find(o->second->attach->object);
 									if (j != p->second.internalObjects.end())
 									{
-										static AMX_NATIVE native = StreamerApi::FindNative("AttachPlayerObjectToObject");
-										if (native != NULL)
-										{
-											StreamerApi::InvokeNative(native, "dddffffffb", p->first, i->second, j->second, o->second->attach->positionOffset[0], o->second->attach->positionOffset[1], o->second->attach->positionOffset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2], o->second->attach->syncRotation);
-										}
+										StreamerApi::AttachPlayerObjectToObject(p->first, i->second, j->second, o->second->attach->positionOffset[0], o->second->attach->positionOffset[1], o->second->attach->positionOffset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2], o->second->attach->syncRotation);
 									}
 								}
 								else if (o->second->attach->player != INVALID_PLAYER_ID)
 								{
-									static AMX_NATIVE native = StreamerApi::FindNative("AttachPlayerObjectToPlayer");
-									if (native != NULL)
-									{
-										StreamerApi::InvokeNative(native, "dddffffffd", p->first, i->second, o->second->attach->player, o->second->attach->positionOffset[0], o->second->attach->positionOffset[1], o->second->attach->positionOffset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2], 1);
-									}
+									StreamerApi::AttachPlayerObjectToPlayer(p->first, i->second, o->second->attach->player, o->second->attach->positionOffset[0], o->second->attach->positionOffset[1], o->second->attach->positionOffset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2]);
 								}
 								else if (o->second->attach->vehicle != INVALID_VEHICLE_ID)
 								{

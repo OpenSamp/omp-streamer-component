@@ -429,19 +429,11 @@ void ChunkStreamer::streamObjects(Player &player, bool automatic)
 				{
 					if (internalBaseId != INVALID_STREAMER_ID)
 					{
-						static AMX_NATIVE native = StreamerApi::FindNative("AttachPlayerObjectToObject");
-						if (native != NULL)
-						{
-							StreamerApi::InvokeNative(native, "dddffffffb", player.playerId, internalId, internalBaseId, obj->attach->positionOffset[0], obj->attach->positionOffset[1], obj->attach->positionOffset[2], obj->attach->rotation[0], obj->attach->rotation[1], obj->attach->rotation[2], obj->attach->syncRotation);
-						}
+						StreamerApi::AttachPlayerObjectToObject(player.playerId, internalId, internalBaseId, obj->attach->positionOffset[0], obj->attach->positionOffset[1], obj->attach->positionOffset[2], obj->attach->rotation[0], obj->attach->rotation[1], obj->attach->rotation[2], obj->attach->syncRotation);
 					}
 					else if (obj->attach->player != INVALID_PLAYER_ID)
 					{
-						static AMX_NATIVE native = StreamerApi::FindNative("AttachPlayerObjectToPlayer");
-						if (native != NULL)
-						{
-							StreamerApi::InvokeNative(native, "dddffffffd", player.playerId, internalId, obj->attach->player, obj->attach->positionOffset[0], obj->attach->positionOffset[1], obj->attach->positionOffset[2], obj->attach->rotation[0], obj->attach->rotation[1], obj->attach->rotation[2], 1);
-						}
+						StreamerApi::AttachPlayerObjectToPlayer(player.playerId, internalId, obj->attach->player, obj->attach->positionOffset[0], obj->attach->positionOffset[1], obj->attach->positionOffset[2], obj->attach->rotation[0], obj->attach->rotation[1], obj->attach->rotation[2]);
 					}
 					else if (obj->attach->vehicle != INVALID_VEHICLE_ID)
 					{

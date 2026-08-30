@@ -1190,19 +1190,11 @@ void Streamer::processObjects(Player &player, const std::vector<SharedCell> &cel
 		{
 			if (internalBaseId != INVALID_STREAMER_ID)
 			{
-				static AMX_NATIVE native = StreamerApi::FindNative("AttachPlayerObjectToObject");
-				if (native != NULL)
-				{
-					StreamerApi::InvokeNative(native, "dddffffffb", player.playerId, internalId, internalBaseId, d.second->attach->positionOffset[0], d.second->attach->positionOffset[1], d.second->attach->positionOffset[2], d.second->attach->rotation[0], d.second->attach->rotation[1], d.second->attach->rotation[2], d.second->attach->syncRotation);
-				}
+				StreamerApi::AttachPlayerObjectToObject(player.playerId, internalId, internalBaseId, d.second->attach->positionOffset[0], d.second->attach->positionOffset[1], d.second->attach->positionOffset[2], d.second->attach->rotation[0], d.second->attach->rotation[1], d.second->attach->rotation[2], d.second->attach->syncRotation);
 			}
 			else if (d.second->attach->player != INVALID_PLAYER_ID)
 			{
-				static AMX_NATIVE native = StreamerApi::FindNative("AttachPlayerObjectToPlayer");
-				if (native != NULL)
-				{
-					StreamerApi::InvokeNative(native, "dddffffffd", player.playerId, internalId, d.second->attach->player, d.second->attach->positionOffset[0], d.second->attach->positionOffset[1], d.second->attach->positionOffset[2], d.second->attach->rotation[0], d.second->attach->rotation[1], d.second->attach->rotation[2], 1);
-				}
+				StreamerApi::AttachPlayerObjectToPlayer(player.playerId, internalId, d.second->attach->player, d.second->attach->positionOffset[0], d.second->attach->positionOffset[1], d.second->attach->positionOffset[2], d.second->attach->rotation[0], d.second->attach->rotation[1], d.second->attach->rotation[2]);
 			}
 			else if (d.second->attach->vehicle != INVALID_VEHICLE_ID)
 			{

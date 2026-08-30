@@ -392,12 +392,6 @@ cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToObject(AMX *amx, cell *params
 			return 0;
 		}
 	}
-	static AMX_NATIVE native = StreamerApi::FindNative("AttachPlayerObjectToObject");
-	if (native == NULL)
-	{
-		Utility::logError("AttachDynamicObjectToObject: use open.mp or YSF plugin to attach objects to objects.");
-		return 0;
-	}
 	std::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(static_cast<int>(params[1]));
 	if (o != core->getData()->objects.end())
 	{
@@ -421,10 +415,7 @@ cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToObject(AMX *amx, cell *params
 				std::unordered_map<int, int>::iterator j = p->second.internalObjects.find(o->second->attach->object);
 				if (j != p->second.internalObjects.end())
 				{
-					if (native != NULL)
-					{
-						StreamerApi::InvokeNative(native, "dddffffffb", p->first, i->second, j->second, o->second->attach->positionOffset[0], o->second->attach->positionOffset[1], o->second->attach->positionOffset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2], o->second->attach->syncRotation);
-					}
+					StreamerApi::AttachPlayerObjectToObject(p->first, i->second, j->second, o->second->attach->positionOffset[0], o->second->attach->positionOffset[1], o->second->attach->positionOffset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2], o->second->attach->syncRotation);
 					for (std::unordered_map<int, Item::Object::Material>::iterator m = o->second->materials.begin(); m != o->second->materials.end(); ++m)
 					{
 						if (m->second.main)
@@ -475,12 +466,6 @@ cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToPlayer(AMX *amx, cell *params
 	CHECK_POS_VEC3(ox, oy, oz);
 	CHECK_ROT_VEC3(rx, ry, rz);
 	CHECK_PLAYER_ID_OR_ALL(static_cast<int>(params[2]));
-	static AMX_NATIVE native = StreamerApi::FindNative("AttachPlayerObjectToPlayer");
-	if (native == NULL)
-	{
-		Utility::logError("AttachDynamicObjectToPlayer: use open.mp or YSF plugin to attach objects to players.");
-		return 0;
-	}
 	std::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(static_cast<int>(params[1]));
 	if (o != core->getData()->objects.end())
 	{
@@ -500,10 +485,7 @@ cell AMX_NATIVE_CALL Natives::AttachDynamicObjectToPlayer(AMX *amx, cell *params
 			std::unordered_map<int, int>::iterator i = p->second.internalObjects.find(o->first);
 			if (i != p->second.internalObjects.end())
 			{
-				if (native != NULL)
-				{
-					StreamerApi::InvokeNative(native, "dddffffffd", p->first, i->second, o->second->attach->player, o->second->attach->positionOffset[0], o->second->attach->positionOffset[1], o->second->attach->positionOffset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2], 0);
-				}
+				StreamerApi::AttachPlayerObjectToPlayer(p->first, i->second, o->second->attach->player, o->second->attach->positionOffset[0], o->second->attach->positionOffset[1], o->second->attach->positionOffset[2], o->second->attach->rotation[0], o->second->attach->rotation[1], o->second->attach->rotation[2]);
 				for (std::unordered_map<int, Item::Object::Material>::iterator m = o->second->materials.begin(); m != o->second->materials.end(); ++m)
 				{
 					if (m->second.main)

@@ -138,70 +138,19 @@ namespace StreamerApi
 
 	namespace
 	{
-		// Sentinel natives used by the legacy StreamerApi::FindNative + StreamerApi::InvokeNative
-		// invocation path that the streamer still uses for a handful of calls. Under open.mp
-		// we don't actually run pawn natives here — the sentinel pointer just identifies which
-		// operation the caller wants, and InvokeNative dispatches to the direct open.mp wrapper.
-		cell AMX_NATIVE_CALL nativeAttachObjectToObject(AMX *, cell *) { return 0; }
-		cell AMX_NATIVE_CALL nativeAttachObjectToPlayer(AMX *, cell *) { return 0; }
 		// "SetPlayerGravity" is only ever FindNative'd as a YSF-presence check; the streamer
-		// never InvokeNative's it, so this sentinel just needs to be non-null.
+		// never invokes it, so this sentinel just needs to be non-null. (The old attach-object
+		// FindNative/InvokeNative shim is gone — those call sites now call the direct open.mp
+		// StreamerApi::AttachPlayerObjectTo* wrappers.)
 		cell AMX_NATIVE_CALL nativeYsfCapabilityMarker(AMX *, cell *) { return 1; }
 	}
 
 	AMX_NATIVE FindNative(const char *name)
 	{
 		if (!name) return nullptr;
-		if (std::strcmp(name, "AttachPlayerObjectToObject") == 0) return &nativeAttachObjectToObject;
-		if (std::strcmp(name, "AttachPlayerObjectToPlayer") == 0) return &nativeAttachObjectToPlayer;
 		if (std::strcmp(name, "SetPlayerGravity") == 0) return &nativeYsfCapabilityMarker;
 		reportStub("FindNative");
 		return nullptr;
-	}
-
-	cell InvokeNative(AMX_NATIVE native, const char *format, ...)
-	{
-		va_list args;
-		va_start(args, format);
-		cell result = 0;
-
-		if (native == &nativeAttachObjectToObject)
-		{
-			// "dddffffffb": int, int, int, float x6, bool
-			int playerid = va_arg(args, int);
-			int objectid = va_arg(args, int);
-			int attachId = va_arg(args, int);
-			float ox = static_cast<float>(va_arg(args, double));
-			float oy = static_cast<float>(va_arg(args, double));
-			float oz = static_cast<float>(va_arg(args, double));
-			float rx = static_cast<float>(va_arg(args, double));
-			float ry = static_cast<float>(va_arg(args, double));
-			float rz = static_cast<float>(va_arg(args, double));
-			int sync = va_arg(args, int); // bool promoted to int
-			result = AttachPlayerObjectToObject(playerid, objectid, attachId, ox, oy, oz, rx, ry, rz, sync != 0) ? 1 : 0;
-		}
-		else if (native == &nativeAttachObjectToPlayer)
-		{
-			// "dddffffffd": int, int, int, float x6, int (sync flag, discarded under open.mp)
-			int playerid = va_arg(args, int);
-			int objectid = va_arg(args, int);
-			int attachPlayer = va_arg(args, int);
-			float ox = static_cast<float>(va_arg(args, double));
-			float oy = static_cast<float>(va_arg(args, double));
-			float oz = static_cast<float>(va_arg(args, double));
-			float rx = static_cast<float>(va_arg(args, double));
-			float ry = static_cast<float>(va_arg(args, double));
-			float rz = static_cast<float>(va_arg(args, double));
-			(void)va_arg(args, int);
-			result = AttachPlayerObjectToPlayer(playerid, objectid, attachPlayer, ox, oy, oz, rx, ry, rz) ? 1 : 0;
-		}
-		else
-		{
-			reportStub("InvokeNative");
-		}
-
-		va_end(args);
-		return result;
 	}
 
 	// Actors

@@ -63,9 +63,8 @@ namespace StreamerApi
 	// --- Logging (implemented, routes to ICore::printLn) ---------------------------------------
 	void logprintf(const char *format, ...);
 
-	// --- AMX native invocation (Stage 1 stubs; Stage 2 will route to IPawnScript::CallNative) ---
+	// --- YSF-presence probe: FindNative("SetPlayerGravity") returns non-null; nothing else ------
 	AMX_NATIVE FindNative(const char *name);
-	cell InvokeNative(AMX_NATIVE native, const char *format, ...);
 
 	// --- SA-MP natives used by the streamer ----------------------------------------------------
 	// All stubbed in Stage 1: return safe defaults and log a one-shot TODO per function.
