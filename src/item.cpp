@@ -28,18 +28,18 @@ Identifier Item::RaceCheckpoint::identifier;
 Identifier Item::TextLabel::identifier;
 Identifier Item::Actor::identifier;
 
-Item::Area::Area() : references(0) {}
-Item::Area::Attach::Attach() : references(0) {}
-Item::Checkpoint::Checkpoint() : references(0) {}
-Item::MapIcon::MapIcon() : references(0) {}
-Item::Object::Object() : references(0) {}
-Item::Object::Attach::Attach() : references(0) {}
-Item::Object::Material::Main::Main() : references(0) {}
-Item::Object::Material::Text::Text() : references(0) {}
-Item::Object::Move::Move() : references(0) {}
-Item::Pickup::Pickup() : references(0) {}
-Item::RaceCheckpoint::RaceCheckpoint() : references(0) {}
-Item::TextLabel::TextLabel() : references(0) {}
-Item::TextLabel::Attach::Attach() : references(0) {}
-Item::Actor::Actor() : references(0) {}
-Item::Actor::Anim::Anim() : references(0) {}
+Item::Area::Area() {}
+Item::Area::Attach::Attach() {}
+Item::Checkpoint::Checkpoint() {}
+Item::MapIcon::MapIcon() {}
+Item::Object::Object() {}
+Item::Object::Attach::Attach() {}
+Item::Object::Material::Main::Main() {}
+Item::Object::Material::Text::Text() {}
+Item::Object::Move::Move() {}
+Item::Pickup::Pickup() {}
+Item::RaceCheckpoint::RaceCheckpoint() {}
+Item::TextLabel::TextLabel() {}
+Item::TextLabel::Attach::Attach() {}
+Item::Actor::Actor() {}
+Item::Actor::Anim::Anim() {}

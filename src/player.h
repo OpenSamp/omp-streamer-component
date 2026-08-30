@@ -44,7 +44,6 @@ struct Player
 	int playerId;
 	Eigen::Vector3f position;
 	float radiusMultipliers[STREAMER_MAX_TYPES];
-	int references;
 	bool requestingClass;
 	std::size_t tickCount;
 	std::size_t tickRate;

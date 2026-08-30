@@ -18,5 +18,5 @@
 
 #include "cell.h"
 
-Cell::Cell() : references(0) {}
-Cell::Cell(CellId passedCellId) : cellId(passedCellId), references(0) {}
+Cell::Cell() {}
+Cell::Cell(CellId passedCellId) : cellId(passedCellId) {}

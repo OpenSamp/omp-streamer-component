@@ -38,7 +38,6 @@ namespace Item
 		Eigen::Vector3f position;
 		Eigen::Vector3f positionOffset;
 		int priority;
-		int references;
 		float rotation;
 		float streamDistance;
 
@@ -53,7 +52,6 @@ namespace Item
 			bool lockx;
 			bool locky;
 			std::string name;
-			int references;
 			int time;
 		};
 
@@ -81,7 +79,6 @@ namespace Item
 		float comparableSize;
 		Eigen::Vector2f height;
 		int priority;
-		int references;
 		float size;
 		bool spectateMode;
 		int type;
@@ -97,7 +94,6 @@ namespace Item
 			int player;
 			std::variant<Polygon2d, Box2d, Box3d, Eigen::Vector2f, Eigen::Vector3f> position;
 			Eigen::Vector3f positionOffset;
-			int references;
 			int vehicle;
 
 			EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -130,7 +126,6 @@ namespace Item
 		Eigen::Vector3f position;
 		Eigen::Vector3f positionOffset;
 		int priority;
-		int references;
 		float size;
 		bool streamCallbacks;
 		float streamDistance;
@@ -161,7 +156,6 @@ namespace Item
 		Eigen::Vector3f position;
 		Eigen::Vector3f positionOffset;
 		int priority;
-		int references;
 		bool streamCallbacks;
 		float streamDistance;
 		int style;
@@ -195,7 +189,6 @@ namespace Item
 		Eigen::Vector3f position;
 		Eigen::Vector3f positionOffset;
 		int priority;
-		int references;
 		Eigen::Vector3f rotation;
 		bool streamCallbacks;
 		float streamDistance;
@@ -208,7 +201,6 @@ namespace Item
 			int player;
 			Eigen::Vector3f position;
 			Eigen::Vector3f positionOffset;
-			int references;
 			Eigen::Vector3f rotation;
 			bool syncRotation;
 			int vehicle;
@@ -228,7 +220,6 @@ namespace Item
 
 				int materialColor;
 				int modelId;
-				int references;
 				std::string textureName;
 				std::string txdFileName;
 			};
@@ -244,7 +235,6 @@ namespace Item
 				int fontColor;
 				std::string fontFace;
 				int fontSize;
-				int references;
 				int materialSize;
 				std::string materialText;
 				int textAlignment;
@@ -261,7 +251,6 @@ namespace Item
 
 			int duration;
 			std::tuple<Eigen::Vector3f, Eigen::Vector3f, Eigen::Vector3f> position;
-			int references;
 			std::tuple<Eigen::Vector3f, Eigen::Vector3f, Eigen::Vector3f> rotation;
 			float speed;
 			std::chrono::steady_clock::time_point time;
@@ -297,7 +286,6 @@ namespace Item
 		Eigen::Vector3f position;
 		Eigen::Vector3f positionOffset;
 		int priority;
-		int references;
 		bool streamCallbacks;
 		float streamDistance;
 		int type;
@@ -328,7 +316,6 @@ namespace Item
 		Eigen::Vector3f positionOffset;
 		int priority;
 		int raceCheckpointId;
-		int references;
 		float size;
 		bool streamCallbacks;
 		float streamDistance;
@@ -360,7 +347,6 @@ namespace Item
 		Eigen::Vector3f position;
 		Eigen::Vector3f positionOffset;
 		int priority;
-		int references;
 		bool streamCallbacks;
 		float streamDistance;
 		bool testLOS;
@@ -373,7 +359,6 @@ namespace Item
 
 			int player;
 			Eigen::Vector3f position;
-			int references;
 			int vehicle;
 
 			std::unordered_set<int> worlds;

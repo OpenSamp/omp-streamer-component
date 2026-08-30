@@ -26,7 +26,6 @@ public:
 	Cell(CellId cellId);
 
 	CellId cellId;
-	int references;
 	// Which tier of the grid owns this cell. Fine grid = cellSize (default 300),
 	// coarse grid = coarseCellSize (default 1500). Set by Grid::add*() when the
 	// cell is placed. Used by Grid::remove*() to pick the right map on lookup.
