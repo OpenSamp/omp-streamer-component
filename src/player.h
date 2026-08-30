@@ -82,6 +82,7 @@ struct Player
 	// dynamic objectId was (re)created in the window. Logged by Streamer::startAutomaticUpdate.
 	std::size_t diagObjCreates = 0;
 	std::size_t diagObjDestroys = 0;
+	std::size_t diagObjMaxPerTick = 0; // most creates in any single streamObjects call this window (chunk-burst size)
 	std::unordered_map<int, int> diagObjCreateIds;
 
 	Identifier mapIconIdentifier;

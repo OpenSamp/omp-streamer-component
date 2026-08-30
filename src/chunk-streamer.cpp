@@ -326,6 +326,7 @@ void ChunkStreamer::streamObjects(Player &player, bool automatic)
 	if (!automatic || ++player.chunkTickCount[STREAMER_TYPE_OBJECT] >= player.chunkTickRate[STREAMER_TYPE_OBJECT])
 	{
 		std::size_t chunkCount = 0;
+		std::size_t createsThisCall = 0; // FLOOD DIAGNOSTIC: per-tick burst size (see diagObjMaxPerTick)
 		if (!player.removedObjects.empty())
 		{
 			std::unordered_set<int>::iterator r = player.removedObjects.begin();
@@ -426,6 +427,7 @@ void ChunkStreamer::streamObjects(Player &player, bool automatic)
 				}
 				++player.diagObjCreates; // FLOOD DIAGNOSTIC
 				++player.diagObjCreateIds[objId]; // FLOOD DIAGNOSTIC
+				++createsThisCall; // FLOOD DIAGNOSTIC
 				if (obj->streamCallbacks)
 				{
 					streamInCallbacks.push_back(std::make_tuple(STREAMER_TYPE_OBJECT, objId, player.playerId));
@@ -476,6 +478,10 @@ void ChunkStreamer::streamObjects(Player &player, bool automatic)
 				player.currentVisibleObjects = player.internalObjects.size();
 				player.discoveredObjects.clear();
 			}
+		}
+		if (createsThisCall > player.diagObjMaxPerTick) // FLOOD DIAGNOSTIC
+		{
+			player.diagObjMaxPerTick = createsThisCall;
 		}
 		player.chunkTickCount[STREAMER_TYPE_OBJECT] = 0;
 	}

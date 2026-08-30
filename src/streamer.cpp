@@ -216,16 +216,17 @@ void Streamer::startAutomaticUpdate()
 								topId = it->first;
 							}
 						}
-						char diagBuf[320];
+						char diagBuf[360];
 						std::snprintf(diagBuf, sizeof(diagBuf),
-							"[StreamerDiag] player %d creates=%d destroys=%d distinctIds=%d topObjId=%d x%d | internal=%d curVis=%d maxVis=%d pos=(%.1f,%.1f,%.1f) world=%d int=%d",
-							pl.playerId, (int)pl.diagObjCreates, (int)pl.diagObjDestroys, (int)pl.diagObjCreateIds.size(),
+							"[StreamerDiag] player %d creates=%d destroys=%d maxPerTick=%d distinctIds=%d topObjId=%d x%d | internal=%d curVis=%d maxVis=%d pos=(%.1f,%.1f,%.1f) world=%d int=%d",
+							pl.playerId, (int)pl.diagObjCreates, (int)pl.diagObjDestroys, (int)pl.diagObjMaxPerTick, (int)pl.diagObjCreateIds.size(),
 							topId, topCount, (int)pl.internalObjects.size(), (int)pl.currentVisibleObjects, (int)pl.maxVisibleObjects,
 							(double)pl.position[0], (double)pl.position[1], (double)pl.position[2], pl.worldId, pl.interiorId);
 						StreamerRuntime::diagLog(diagBuf);
 					}
 					pl.diagObjCreates = 0;
 					pl.diagObjDestroys = 0;
+					pl.diagObjMaxPerTick = 0;
 					pl.diagObjCreateIds.clear();
 				}
 				diagLast = currentTime;
@@ -296,7 +297,16 @@ void Streamer::startManualUpdate(Player &player, int type)
 	performPlayerUpdate(player, false);
 	if (core->getChunkStreamer()->getChunkStreamingEnabled())
 	{
-		core->getChunkStreamer()->performPlayerChunkUpdate(player, false);
+		// automatic=true (not false): a manual update (Streamer_Update, fired by the gamemode on
+		// every teleport / world / interior change) must ALSO respect chunkSize. With false, the
+		// chunker drains the entire discovered set in this one tick -> a world transition dumps the
+		// whole visible set (~850 objects = ~2500 reliable RPCs: CreateObject + SetObjectMaterial +
+		// DestroyObject) into the client's reliable queue in a single 5ms tick, starving position
+		// sync and flirting with acks_limit for higher-ping players. With true, the nearest/highest-
+		// priority chunkSize objects stream this tick (OrderedItemSet is priority-DESC/distance-ASC,
+		// so the ground the player lands on loads first -> no fall-through) and the automatic per-tick
+		// chunker (startAutomaticUpdate) drains the remainder over the next few ticks.
+		core->getChunkStreamer()->performPlayerChunkUpdate(player, true);
 	}
 	player.enabledItems = enabledItems;
 }
