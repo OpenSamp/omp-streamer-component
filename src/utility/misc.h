@@ -254,6 +254,87 @@ namespace Utility
 		}
 		return false;
 	}
+
+	// --- PlayerVisibility overloads: exact mirrors of the std::bitset<N> versions above --------
+	template<typename T>
+	inline bool addToContainer(PlayerVisibility &container, T value)
+	{
+		if (value < 0)
+		{
+			container.set();
+		}
+		else if (static_cast<std::size_t>(value) >= static_cast<std::size_t>(MAX_PLAYERS))
+		{
+			container.reset();
+		}
+		else
+		{
+			container.set(static_cast<std::size_t>(value));
+			return true;
+		}
+		return false;
+	}
+
+	inline int getFirstValueInContainer(const PlayerVisibility &container)
+	{
+		if (container.any())
+		{
+			if (container.all())
+			{
+				return -1;
+			}
+			for (std::size_t i = 0; i < static_cast<std::size_t>(MAX_PLAYERS); ++i)
+			{
+				if (container.test(i))
+				{
+					return static_cast<int>(i);
+				}
+			}
+		}
+		return INVALID_PLAYER_ID;
+	}
+
+	template<typename T>
+	inline bool setFirstValueInContainer(PlayerVisibility &container, T value)
+	{
+		container.reset();
+		return addToContainer(container, value);
+	}
+
+	template<typename T>
+	inline bool isInContainer(const PlayerVisibility &container, const T value)
+	{
+		if (value >= 0 && static_cast<std::size_t>(value) < static_cast<std::size_t>(MAX_PLAYERS))
+		{
+			if (container.test(static_cast<std::size_t>(value)))
+			{
+				return true;
+			}
+		}
+		else
+		{
+			if (container.count() == static_cast<std::size_t>(MAX_PLAYERS))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	template<typename T>
+	inline bool removeFromContainer(PlayerVisibility &container, T value)
+	{
+		if (value >= 0 && static_cast<std::size_t>(value) < static_cast<std::size_t>(MAX_PLAYERS))
+		{
+			container.reset(static_cast<std::size_t>(value));
+			return true;
+		}
+		else
+		{
+			container.reset();
+		}
+		return false;
+	}
 }
 
 #endif

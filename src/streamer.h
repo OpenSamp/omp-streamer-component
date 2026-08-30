@@ -147,6 +147,19 @@ protected:
 	{
 		return (a[b] && (c.empty() || c.find(d) != c.end()) && (e.empty() || e.find(f) != e.end()) && (g.empty() || i ? !Utility::isContainerWithinContainer(g, h) : Utility::isContainerWithinContainer(g, h)));
 	}
+
+	// PlayerVisibility overloads (the item "players" field is a PlayerVisibility, not a bitset).
+	template<typename T>
+	inline bool doesPlayerSatisfyConditions(const PlayerVisibility &a, const T &b, const std::unordered_set<T> &c, const T &d, const std::unordered_set<T> &e, const T &f)
+	{
+		return (a[b] && (c.empty() || c.find(d) != c.end()) && (e.empty() || e.find(f) != e.end()));
+	}
+
+	template<typename T>
+	inline bool doesPlayerSatisfyConditions(const PlayerVisibility &a, const T &b, const std::unordered_set<T> &c, const T &d, const std::unordered_set<T> &e, const T &f, const std::unordered_set<T> &g, const std::unordered_set<T> &h, bool i)
+	{
+		return (a[b] && (c.empty() || c.find(d) != c.end()) && (e.empty() || e.find(f) != e.end()) && (g.empty() || i ? !Utility::isContainerWithinContainer(g, h) : Utility::isContainerWithinContainer(g, h)));
+	}
 };
 
 #endif

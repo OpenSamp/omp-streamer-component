@@ -134,6 +134,42 @@ namespace Utility
 		return true;
 	}
 
+	// PlayerVisibility overloads — mirror the std::bitset<N> converters above.
+	inline bool convertArrayToContainer(AMX *amx, cell input, cell size, PlayerVisibility &container)
+	{
+		cell *array = NULL;
+		amx_GetAddr(amx, input, &array);
+		container.reset();
+		for (std::size_t i = 0; i < static_cast<std::size_t>(size); ++i)
+		{
+			if (!addToContainer(container, static_cast<int>(array[i])))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	inline bool convertContainerToArray(AMX *amx, cell output, cell size, const PlayerVisibility &container)
+	{
+		cell *array = NULL;
+		std::size_t i = 0;
+		amx_GetAddr(amx, output, &array);
+		for (std::size_t c = 0; c < static_cast<std::size_t>(MAX_PLAYERS); ++c)
+		{
+			if (!container.test(c))
+			{
+				continue;
+			}
+			if (i == static_cast<std::size_t>(size))
+			{
+				return false;
+			}
+			array[i++] = static_cast<cell>(c);
+		}
+		return true;
+	}
+
 	void convertArrayToPolygon(AMX *amx, cell input, cell size, Polygon2d &polygon);
 	bool convertPolygonToArray(AMX *amx, cell output, cell size, Polygon2d &polygon);
 	std::string convertNativeStringToString(AMX *amx, cell input);
