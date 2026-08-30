@@ -130,7 +130,10 @@ struct pair_hash
 		std::size_t h1 = std::hash<T1>()(pair.first);
 		std::size_t h2 = std::hash<T2>()(pair.second);
 
-		return h1 ^ h2;
+		// hash_combine, not a bare XOR: with std::hash<int> being identity, `h1 ^ h2`
+		// makes every diagonal CellId (k,k) hash to 0 and (x,y)/(y,x) collide — pathological
+		// bucket pile-ups on a coordinate grid. This mixes the bits properly.
+		return h1 ^ (h2 + 0x9e3779b97f4a7c15ULL + (h1 << 6) + (h1 >> 2));
 	}
 };
 

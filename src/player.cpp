@@ -54,8 +54,10 @@ Player::Player(int id)
 	radiusMultipliers[STREAMER_TYPE_AREA] = core->getData()->getGlobalRadiusMultiplier(STREAMER_TYPE_AREA);
 	radiusMultipliers[STREAMER_TYPE_ACTOR] = core->getData()->getGlobalRadiusMultiplier(STREAMER_TYPE_ACTOR);
 	requestingClass = false;
-	tickCount = 0;
 	tickRate = 50;
+	// Stagger players across the tick window instead of all starting at tickCount=0, so a
+	// mass reconnect / restart doesn't land every player's full update on the same tick.
+	tickCount = id % tickRate;
 	updateUsingCameraPosition = false;
 	updateWhenIdle = false;
 	visibleCell = std::make_shared<Cell>();

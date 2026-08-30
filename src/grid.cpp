@@ -600,13 +600,13 @@ void Grid::removeTextLabel(const Item::SharedTextLabel &textLabel, bool reassign
 
 CellId Grid::getCellId(const Eigen::Vector2f &position, bool insert)
 {
-	static Box2d box;
-	box.min_corner()[0] = std::floor((position[0] / cellSize)) * cellSize;
-	box.min_corner()[1] = std::floor((position[1] / cellSize)) * cellSize;
-	box.max_corner()[0] = box.min_corner()[0] + cellSize;
-	box.max_corner()[1] = box.min_corner()[1] + cellSize;
-	Eigen::Vector2f centroid = boost::geometry::return_centroid<Eigen::Vector2f>(box);
-	CellId cellId = std::make_pair(static_cast<int>(centroid[0]), static_cast<int>(centroid[1]));
+	// The centroid of the [min, min+cellSize] cell box is just min + cellSize/2. Compute it
+	// arithmetically instead of boost::geometry::return_centroid over a non-reentrant static
+	// Box2d (identical result; removes a hot-path boost call ~9x/player/update and a global
+	// static that blocked parallelising the discovery pass). Mirrors getCoarseCellId.
+	const float minX = std::floor(position[0] / cellSize) * cellSize;
+	const float minY = std::floor(position[1] / cellSize) * cellSize;
+	CellId cellId = std::make_pair(static_cast<int>(minX + cellSize / 2.0f), static_cast<int>(minY + cellSize / 2.0f));
 	if (insert)
 	{
 		std::unordered_map<CellId, SharedCell, pair_hash>::iterator c = cells.find(cellId);
