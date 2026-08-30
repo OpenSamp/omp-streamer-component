@@ -24,7 +24,12 @@ ChunkStreamer::ChunkStreamer()
 	chunkSize[STREAMER_TYPE_OBJECT] = 100;
 	chunkSize[STREAMER_TYPE_MAP_ICON] = 100;
 	chunkSize[STREAMER_TYPE_3D_TEXT_LABEL] = 100;
-	chunkStreamingEnabled = false;
+	// Enabled: amortise a large stream-in burst (dense RP interiors reach ~850 visible objects at
+	// once) across several ticks instead of firing every CreateObject/SetObjectMaterial in one tick.
+	// The single-tick burst peaks reliable-RPC/s high enough to trip acks_limit for higher-ping
+	// players. chunkSize / chunkTickRate here are starting defaults; tune from live [StreamerDiag]
+	// telemetry (the per-second create/destroy rate tells us the real server tick frequency).
+	chunkStreamingEnabled = true;
 }
 
 std::size_t ChunkStreamer::getChunkSize(int type)
