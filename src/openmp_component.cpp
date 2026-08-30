@@ -452,7 +452,9 @@ namespace
 namespace StreamerRuntime
 {
 	ICore *core() { return g_streamerComponent.core_; }
+#if defined(STREAMER_FLOOD_DIAG)
 	void diagLog(const char *msg) { if (ICore *c = g_streamerComponent.core_) c->printLn("%s", msg); }
+#endif
 	IPawnComponent *pawn() { return g_streamerComponent.pawn_; }
 	IVehiclesComponent *vehicles() { return g_streamerComponent.vehicles_; }
 	IObjectsComponent *objects() { return g_streamerComponent.objects_; }

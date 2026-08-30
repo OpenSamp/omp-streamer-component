@@ -40,8 +40,11 @@ namespace StreamerRuntime
 	ICheckpointsComponent *checkpoints();
 	IClassesComponent *classes();
 
-	// FLOOD DIAGNOSTIC (temporary): print a pre-formatted line via the runtime core.
+#if defined(STREAMER_FLOOD_DIAG)
+	// FLOOD DIAGNOSTIC (compile-time gated via -DSTREAMER_FLOOD_DIAG): print a pre-formatted
+	// line via the runtime core.
 	void diagLog(const char *msg);
+#endif
 }
 
 #endif

@@ -112,6 +112,19 @@ if(STREAMER_ASAN)
 	message(STATUS "Streamer: AddressSanitizer enabled")
 endif()
 
+# Optional per-object flood/stream diagnostics: -DSTREAMER_FLOOD_DIAG=ON.
+# Compiles in the [StreamerDiag] per-second stream-in/out logging plus the per-tick burst
+# counters (diagObjCreates/Destroys/MaxPerTick/CreateIds) used to investigate the dense-
+# interior RPC flood. OFF by default and truly zero-overhead when off: the counters, the
+# per-create map writes and the once-a-second scan all compile out. Turn ON to re-observe
+# streaming rates on a live server (e.g. a real-ping / prod test) — the C# FloodMonitor is
+# unaffected either way.
+option(STREAMER_FLOOD_DIAG "Compile in per-object streamer flood diagnostics" OFF)
+if(STREAMER_FLOOD_DIAG)
+	target_compile_definitions(${PROJECT_NAME} PRIVATE STREAMER_FLOOD_DIAG)
+	message(STATUS "Streamer: flood diagnostics enabled ([StreamerDiag] logging on)")
+endif()
+
 # Platform / architecture handling.
 if(WIN32)
 	target_compile_definitions(${PROJECT_NAME} PRIVATE NOMINMAX)

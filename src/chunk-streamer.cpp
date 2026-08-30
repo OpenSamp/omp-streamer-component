@@ -326,7 +326,9 @@ void ChunkStreamer::streamObjects(Player &player, bool automatic)
 	if (!automatic || ++player.chunkTickCount[STREAMER_TYPE_OBJECT] >= player.chunkTickRate[STREAMER_TYPE_OBJECT])
 	{
 		std::size_t chunkCount = 0;
-		std::size_t createsThisCall = 0; // FLOOD DIAGNOSTIC: per-tick burst size (see diagObjMaxPerTick)
+#if defined(STREAMER_FLOOD_DIAG)
+		std::size_t createsThisCall = 0; // per-tick burst size (see diagObjMaxPerTick)
+#endif
 		if (!player.removedObjects.empty())
 		{
 			std::unordered_set<int>::iterator r = player.removedObjects.begin();
@@ -340,7 +342,9 @@ void ChunkStreamer::streamObjects(Player &player, bool automatic)
 				if (i != player.internalObjects.end())
 				{
 					StreamerApi::DestroyPlayerObject(player.playerId, i->second);
-					++player.diagObjDestroys; // FLOOD DIAGNOSTIC
+#if defined(STREAMER_FLOOD_DIAG)
+					++player.diagObjDestroys;
+#endif
 					std::unordered_map<int, Item::SharedObject>::iterator o = core->getData()->objects.find(*r);
 					if (o != core->getData()->objects.end())
 					{
@@ -399,7 +403,9 @@ void ChunkStreamer::streamObjects(Player &player, bool automatic)
 							if (j != player.internalObjects.end())
 							{
 								StreamerApi::DestroyPlayerObject(player.playerId, j->second);
-								++player.diagObjDestroys; // FLOOD DIAGNOSTIC
+#if defined(STREAMER_FLOOD_DIAG)
+								++player.diagObjDestroys;
+#endif
 								if (worst->streamCallbacks)
 								{
 									streamOutCallbacks.push_back(std::make_tuple(STREAMER_TYPE_OBJECT, worstId, player.playerId));
@@ -425,9 +431,11 @@ void ChunkStreamer::streamObjects(Player &player, bool automatic)
 					streamingCanceled = true;
 					break;
 				}
-				++player.diagObjCreates; // FLOOD DIAGNOSTIC
-				++player.diagObjCreateIds[objId]; // FLOOD DIAGNOSTIC
-				++createsThisCall; // FLOOD DIAGNOSTIC
+#if defined(STREAMER_FLOOD_DIAG)
+				++player.diagObjCreates;
+				++player.diagObjCreateIds[objId];
+				++createsThisCall;
+#endif
 				if (obj->streamCallbacks)
 				{
 					streamInCallbacks.push_back(std::make_tuple(STREAMER_TYPE_OBJECT, objId, player.playerId));
@@ -479,10 +487,12 @@ void ChunkStreamer::streamObjects(Player &player, bool automatic)
 				player.discoveredObjects.clear();
 			}
 		}
-		if (createsThisCall > player.diagObjMaxPerTick) // FLOOD DIAGNOSTIC
+#if defined(STREAMER_FLOOD_DIAG)
+		if (createsThisCall > player.diagObjMaxPerTick)
 		{
 			player.diagObjMaxPerTick = createsThisCall;
 		}
+#endif
 		player.chunkTickCount[STREAMER_TYPE_OBJECT] = 0;
 	}
 	if (player.discoveredObjects.empty() && player.removedObjects.empty())

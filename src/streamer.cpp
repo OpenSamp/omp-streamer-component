@@ -19,7 +19,9 @@
 #include "streamer.h"
 #include "core.h"
 #include "streamer_component_api.h"
+#if defined(STREAMER_FLOOD_DIAG)
 #include "openmp_component.h" // FLOOD DIAGNOSTIC: StreamerRuntime::diagLog
+#endif
 
 namespace
 {
@@ -191,7 +193,8 @@ void Streamer::startAutomaticUpdate()
 			executeCallbacks();
 			tickCount = 0;
 		}
-		// --- FLOOD DIAGNOSTIC (temporary; remove after root-cause) ---
+#if defined(STREAMER_FLOOD_DIAG)
+		// --- FLOOD DIAGNOSTIC (compile-time gated via -DSTREAMER_FLOOD_DIAG) ---
 		// Once per second, log any player whose per-second object stream-in rate is
 		// abnormally high, together with the state that distinguishes the cause:
 		//   creates>>destroys & distinctIds<<creates  -> same objects re-created (tracking/thrash)
@@ -232,6 +235,7 @@ void Streamer::startAutomaticUpdate()
 				diagLast = currentTime;
 			}
 		}
+#endif
 		calculateAverageElapsedTime();
 		lastUpdateTime = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - currentTime).count();
 	}
@@ -1119,7 +1123,9 @@ void Streamer::processObjects(Player &player, const std::vector<SharedCell> &cel
 				if (i != player.internalObjects.end())
 				{
 					StreamerApi::DestroyPlayerObject(player.playerId, i->second);
-					++player.diagObjDestroys; // FLOOD DIAGNOSTIC
+#if defined(STREAMER_FLOOD_DIAG)
+					++player.diagObjDestroys;
+#endif
 					++phaseStreamOutCount[STREAMER_TYPE_OBJECT];
 					if (o->second->streamCallbacks)
 					{
@@ -1163,7 +1169,9 @@ void Streamer::processObjects(Player &player, const std::vector<SharedCell> &cel
 					if (j != player.internalObjects.end())
 					{
 						StreamerApi::DestroyPlayerObject(player.playerId, j->second);
-						++player.diagObjDestroys; // FLOOD DIAGNOSTIC
+#if defined(STREAMER_FLOOD_DIAG)
+						++player.diagObjDestroys;
+#endif
 						if (e.second->streamCallbacks)
 						{
 							streamOutCallbacks.push_back(std::make_tuple(STREAMER_TYPE_OBJECT, e.second->objectId, player.playerId));
@@ -1189,8 +1197,10 @@ void Streamer::processObjects(Player &player, const std::vector<SharedCell> &cel
 			player.currentVisibleObjects = player.internalObjects.size();
 			break;
 		}
-		++player.diagObjCreates; // FLOOD DIAGNOSTIC
-		++player.diagObjCreateIds[d.second->objectId]; // FLOOD DIAGNOSTIC
+#if defined(STREAMER_FLOOD_DIAG)
+		++player.diagObjCreates;
+		++player.diagObjCreateIds[d.second->objectId];
+#endif
 		++phaseStreamInCount[STREAMER_TYPE_OBJECT];
 		if (d.second->streamCallbacks)
 		{

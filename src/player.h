@@ -77,13 +77,15 @@ struct Player
 	std::unordered_set<int> removedObjects;
 	std::unordered_set<int> removedTextLabels;
 
-	// --- FLOOD DIAGNOSTIC (temporary; remove after root-cause) ---
+#if defined(STREAMER_FLOOD_DIAG)
+	// --- FLOOD DIAGNOSTIC (compile-time gated via -DSTREAMER_FLOOD_DIAG) ---
 	// Per-second counters of object stream-in/out RPCs, plus how many times each
 	// dynamic objectId was (re)created in the window. Logged by Streamer::startAutomaticUpdate.
 	std::size_t diagObjCreates = 0;
 	std::size_t diagObjDestroys = 0;
 	std::size_t diagObjMaxPerTick = 0; // most creates in any single streamObjects call this window (chunk-burst size)
 	std::unordered_map<int, int> diagObjCreateIds;
+#endif
 
 	Identifier mapIconIdentifier;
 
